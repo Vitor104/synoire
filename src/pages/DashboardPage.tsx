@@ -7,14 +7,14 @@ const Stat = ({
   value: string
   hint: string
 }) => (
-  <div className="rounded-2xl border border-border bg-surface-1 p-5">
-    <p className="text-xs font-medium uppercase tracking-wide text-muted">
+  <div className="rounded-2xl border border-border bg-surface p-5">
+    <p className="text-xs font-medium uppercase tracking-wide text-secondary">
       {label}
     </p>
-    <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">
+    <p className="mt-2 text-3xl font-semibold tabular-nums text-primary">
       {value}
     </p>
-    <p className="mt-2 text-sm text-muted">{hint}</p>
+    <p className="mt-2 text-sm text-secondary">{hint}</p>
   </div>
 )
 
@@ -22,8 +22,8 @@ export function DashboardPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <header className="mb-10">
-        <h1 className="text-2xl font-semibold text-foreground">Painel</h1>
-        <p className="mt-1 text-sm text-muted">
+        <h1 className="text-2xl font-semibold text-primary">Painel</h1>
+        <p className="mt-1 text-sm text-secondary">
           Visão rápida de constância — dados reais virão do Supabase.
         </p>
       </header>
@@ -40,16 +40,16 @@ export function DashboardPage() {
           hint="Progresso da meta (placeholder)"
         />
       </div>
-      <section className="mt-10 rounded-2xl border border-border bg-surface-1 p-6">
-        <h2 className="text-sm font-medium text-foreground">Evolução semanal</h2>
-        <p className="mt-2 text-sm text-muted">
+      <section className="mt-10 rounded-2xl border border-border bg-surface p-6">
+        <h2 className="text-sm font-medium text-primary">Evolução semanal</h2>
+        <p className="mt-2 text-sm text-secondary">
           Gráfico de barras / linha será adicionado com dados agregados.
         </p>
         <div className="mt-6 flex h-32 items-end gap-2">
           {[35, 55, 40, 70, 25, 60, 45].map((h, i) => (
             <div
               key={i}
-              className="flex-1 rounded-t-md bg-accent/30"
+              className="flex-1 rounded-t-md bg-firefly/30"
               style={{ height: `${h}%` }}
             />
           ))}

@@ -41,11 +41,18 @@ describe('rotas (smoke, sem backend)', () => {
     ).toBeInTheDocument()
   })
 
-  it('renderiza sala de estudo (pomodoro local)', () => {
+  it('renderiza sala de estudo imersiva', () => {
     renderAt('/salas/demo')
     expect(
-      screen.getByRole('heading', { name: /pomodoro \(local\)/i }),
+      screen.getByRole('main', {
+        name: /sala de estudo: sala de demonstração/i,
+      }),
     ).toBeInTheDocument()
+  })
+
+  it('sala de estudo não usa o shell lateral', () => {
+    renderAt('/salas/demo')
+    expect(screen.queryByRole('link', { name: /^hubs$/i })).not.toBeInTheDocument()
   })
 
   it('renderiza perfil', () => {

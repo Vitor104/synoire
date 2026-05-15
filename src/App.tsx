@@ -13,11 +13,11 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/entrar" element={<AuthPage />} />
+      <Route path="/salas/:roomId" element={<RoomPage />} />
       <Route element={<AppShell />}>
         <Route path="/painel" element={<DashboardPage />} />
         <Route path="/hubs" element={<HubsPage />} />
         <Route path="/hubs/:slug" element={<HubDetailPage />} />
-        <Route path="/salas/:roomId" element={<RoomPage />} />
         <Route path="/perfil" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

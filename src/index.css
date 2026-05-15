@@ -1,15 +1,17 @@
 @import 'tailwindcss';
 
+/* Night Focus — paleta global (Tailwind v4 @theme) */
 @theme {
   --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-  --color-surface-0: #0c0e12;
-  --color-surface-1: #12151c;
-  --color-surface-2: #1a1e28;
-  --color-border: #2a303c;
-  --color-muted: #8b93a7;
-  --color-foreground: #e8ebf2;
-  --color-accent: #5eead4;
-  --color-accent-dim: #2dd4bf33;
+  --color-night: #0b0f14;
+  --color-surface: #161c24;
+  --color-elevated: #1e2630;
+  --color-border: #2a3340;
+  --color-primary: #f4f7fa;
+  --color-secondary: #a4afbd;
+  --color-firefly: #d8ff5e;
+  --color-firefly-dim: #d8ff5e26;
+  --color-aqua: #67c7ff;
 }
 
 @layer base {
@@ -18,7 +20,7 @@
   }
 
   body {
-    @apply m-0 min-h-dvh bg-surface-0 font-sans text-foreground;
+    @apply m-0 min-h-dvh bg-night font-sans text-primary;
   }
 
   #root {

@@ -8,8 +8,8 @@ export function HubDetailPage() {
   if (!hub) {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
-        <p className="text-muted">Hub não encontrado.</p>
-        <Link to="/hubs" className="mt-4 inline-block text-sm text-accent">
+        <p className="text-secondary">Hub não encontrado.</p>
+        <Link to="/hubs" className="mt-4 inline-block text-sm text-aqua">
           Voltar aos hubs
         </Link>
       </div>
@@ -20,18 +20,18 @@ export function HubDetailPage() {
     <div className="mx-auto max-w-3xl">
       <Link
         to="/hubs"
-        className="text-sm text-muted hover:text-foreground"
+        className="text-sm text-secondary hover:text-primary"
       >
         ← Hubs
       </Link>
       <header className="mt-6">
-        <h1 className="text-2xl font-semibold text-foreground">{hub.name}</h1>
-        <p className="mt-2 text-sm text-muted">
+        <h1 className="text-2xl font-semibold text-primary">{hub.name}</h1>
+        <p className="mt-2 text-sm text-secondary">
           Salas ativas e metas do hub aparecerão aqui. Realtime para presença
           será plugado no Supabase.
         </p>
       </header>
-      <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface-1/50 p-8 text-center text-sm text-muted">
+      <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface/50 p-8 text-center text-sm text-secondary">
         Lista de salas (placeholder)
       </div>
     </div>
