@@ -1,9 +1,19 @@
+import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { LandingButton } from '@/components/landing/primitives'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { pageStaggerEase } from '@/motion/pageStagger'
 
 export function LandingNavbar() {
+  const reduced = usePrefersReducedMotion()
+
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-night/80 backdrop-blur-md">
+    <motion.header
+      className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-night/80 backdrop-blur-md"
+      initial={reduced ? false : { opacity: 0, y: -16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, ease: pageStaggerEase }}
+    >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
         <Link
           to="/"
@@ -12,9 +22,9 @@ export function LandingNavbar() {
           <img
             src="/logoSynoire.svg"
             alt="Synoire"
-            className="h-5 w-auto sm:h-6"
-            width={120}
-            height={24}
+            className="h-auto w-36 object-contain object-left sm:w-40 md:w-44"
+            width={176}
+            height={48}
           />
         </Link>
         <nav className="flex items-center gap-2 sm:gap-3">
@@ -26,6 +36,6 @@ export function LandingNavbar() {
           </LandingButton>
         </nav>
       </div>
-    </header>
+    </motion.header>
   )
 }

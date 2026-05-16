@@ -5,7 +5,7 @@ export const pageStaggerEase: [number, number, number, number] = [
   0.22, 1, 0.36, 1,
 ]
 
-const childDuration = 0.42
+const childDuration = 0.52
 
 /** Container: orquestra `staggerChildren` nos filhos com `pageStaggerItem`. */
 export function pageStaggerContainer(reduced: boolean): Variants {
@@ -22,8 +22,8 @@ export function pageStaggerContainer(reduced: boolean): Variants {
     hidden: {},
     visible: {
       transition: {
-        staggerChildren: 0.065,
-        delayChildren: 0.05,
+        staggerChildren: 0.09,
+        delayChildren: 0.12,
       },
     },
   }
@@ -60,11 +60,35 @@ export function pageStaggerItem(reduced: boolean): Variants {
     }
   }
   return {
-    hidden: { opacity: 0, y: 14 },
+    hidden: { opacity: 0, y: 22, scale: 0.97, filter: 'blur(6px)' },
     visible: {
       opacity: 1,
       y: 0,
+      scale: 1,
+      filter: 'blur(0px)',
       transition: { duration: childDuration, ease: pageStaggerEase },
+    },
+  }
+}
+
+/** Entrada do preview / cards com leve flutuação contínua. */
+export function pageFloatItem(reduced: boolean): Variants {
+  if (reduced) {
+    return {
+      hidden: { opacity: 1, y: 0 },
+      visible: { opacity: 1, y: 0 },
+    }
+  }
+  return {
+    hidden: { opacity: 0, y: 28, scale: 0.94 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.65,
+        ease: pageStaggerEase,
+      },
     },
   }
 }

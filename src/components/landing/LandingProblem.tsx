@@ -27,7 +27,7 @@ export function LandingProblem() {
         initial="hidden"
         whileInView="visible"
         viewport={scrollRevealViewport}
-        className="grid gap-12 lg:grid-cols-2 lg:gap-16 lg:items-start"
+        className="grid gap-14 lg:grid-cols-2 lg:gap-20 lg:items-start"
       >
         <div>
           <motion.div variants={item}>

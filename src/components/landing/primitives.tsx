@@ -12,7 +12,7 @@ export function Section({ id, children, className = '', narrow }: SectionProps) 
   return (
     <section
       id={id}
-      className={`px-6 py-20 md:py-28 ${narrow ? 'max-w-4xl mx-auto' : 'max-w-6xl mx-auto'} ${className}`}
+      className={`px-6 py-28 md:py-36 ${narrow ? 'max-w-4xl mx-auto' : 'max-w-6xl mx-auto'} ${className}`}
     >
       {children}
     </section>

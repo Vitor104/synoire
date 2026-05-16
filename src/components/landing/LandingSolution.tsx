@@ -60,7 +60,7 @@ export function LandingSolution() {
 
         <motion.ul
           variants={list}
-          className="mt-14 grid gap-4 md:grid-cols-3"
+          className="mt-16 grid gap-5 md:grid-cols-3 md:gap-6"
         >
           {FEATURES.map((f) => (
             <motion.li

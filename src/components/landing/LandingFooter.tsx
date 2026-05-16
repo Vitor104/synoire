@@ -10,7 +10,7 @@ const LINKS = [
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-border/50 px-6 py-12">
+    <footer className="border-t border-border/50 px-6 py-16 md:py-20">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
         <Link
           to="/"

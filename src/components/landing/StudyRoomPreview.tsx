@@ -65,9 +65,21 @@ export function StudyRoomPreview({
           className="flex flex-col items-center px-6 py-12 md:py-14"
           aria-hidden
         >
-          <p className="font-serif text-5xl font-medium tabular-nums tracking-tight text-primary md:text-6xl">
+          <motion.p
+            className="font-serif text-5xl font-medium tabular-nums tracking-tight text-primary md:text-6xl"
+            animate={
+              reduced
+                ? undefined
+                : { opacity: [0.92, 1, 0.92] }
+            }
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
             25:00
-          </p>
+          </motion.p>
           <p className="mt-4 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-secondary sm:text-xs">
             Sessão de foco · Rodada 2 de 4
           </p>

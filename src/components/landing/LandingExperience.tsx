@@ -27,7 +27,7 @@ export function LandingExperience() {
       >
         <motion.h2
           variants={item}
-          className="mb-10 text-center text-3xl font-bold tracking-tight text-primary md:text-4xl"
+          className="mb-14 text-center text-3xl font-bold tracking-tight text-primary md:text-4xl"
         >
           Entre na sala.
         </motion.h2>
@@ -38,7 +38,7 @@ export function LandingExperience() {
 
         <motion.p
           variants={item}
-          className="mx-auto mt-8 max-w-xl text-center text-pretty text-secondary"
+          className="mx-auto mt-10 max-w-xl text-center text-pretty text-secondary"
         >
           Um ambiente calmo criado para tornar a constância algo natural.{' '}
           <Link

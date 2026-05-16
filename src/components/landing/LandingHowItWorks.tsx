@@ -28,7 +28,7 @@ export function LandingHowItWorks() {
         whileInView="visible"
         viewport={scrollRevealViewport}
       >
-        <motion.div variants={item} className="mb-14 max-w-xl">
+        <motion.div variants={item} className="mb-16 max-w-xl md:mb-20">
           <Eyebrow>Como funciona</Eyebrow>
           <h2 className="mt-4 text-balance text-3xl font-bold tracking-tight text-primary md:text-4xl">
             Entre.
@@ -41,7 +41,7 @@ export function LandingHowItWorks() {
 
         <motion.ol
           variants={list}
-          className="grid gap-8 md:grid-cols-3 md:gap-6"
+          className="grid gap-10 md:grid-cols-3 md:gap-8"
         >
           {STEPS.map((step) => (
             <motion.li

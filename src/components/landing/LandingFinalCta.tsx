@@ -34,7 +34,7 @@ export function LandingFinalCta() {
         </motion.h2>
         <motion.p
           variants={item}
-          className="mx-auto mt-6 max-w-md text-pretty text-lg text-secondary"
+          className="mx-auto mt-8 max-w-md text-pretty text-lg text-secondary"
         >
           Pare de depender de motivação.
           <br />
@@ -42,7 +42,7 @@ export function LandingFinalCta() {
         </motion.p>
         <motion.div
           variants={item}
-          className="mt-10 flex flex-wrap items-center justify-center gap-3"
+          className="mt-12 flex flex-wrap items-center justify-center gap-3"
         >
           <LandingButton to="/entrar">Criar conta</LandingButton>
           <LandingButton to="/entrar" variant="ghost">
