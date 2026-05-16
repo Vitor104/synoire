@@ -3,6 +3,7 @@
 /* Night Focus — paleta global (Tailwind v4 @theme) */
 @theme {
   --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Fraunces', ui-serif, Georgia, serif;
   --color-night: #0b0f14;
   --color-surface: #131a22;
   --color-elevated: #1b2430;

@@ -19,7 +19,20 @@ export function Section({ id, children, className = '', narrow }: SectionProps) 
   )
 }
 
-export function Eyebrow({ children }: { children: ReactNode }) {
+type EyebrowProps = {
+  children: ReactNode
+  variant?: 'plain' | 'pill'
+}
+
+export function Eyebrow({ children, variant = 'plain' }: EyebrowProps) {
+  if (variant === 'pill') {
+    return (
+      <p className="inline-block rounded-full border border-firefly/35 bg-night/80 px-4 py-1.5 text-[0.65rem] font-medium uppercase tracking-[0.18em] text-firefly sm:text-xs">
+        {children}
+      </p>
+    )
+  }
+
   return (
     <p className="text-xs font-medium uppercase tracking-[0.2em] text-secondary">
       {children}

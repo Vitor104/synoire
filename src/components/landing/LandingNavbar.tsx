@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { FireflyIcon } from '@/components/landing/FireflyIcon'
 import { LandingButton } from '@/components/landing/primitives'
 
 export function LandingNavbar() {
@@ -8,12 +7,15 @@ export function LandingNavbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
         <Link
           to="/"
-          className="group flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-firefly/50"
+          className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-firefly/50"
         >
-          <FireflyIcon className="h-2 w-2" />
-          <span className="text-sm font-semibold tracking-tight text-primary">
-            Synoire
-          </span>
+          <img
+            src="/logoSynoire.svg"
+            alt="Synoire"
+            className="h-5 w-auto sm:h-6"
+            width={120}
+            height={24}
+          />
         </Link>
         <nav className="flex items-center gap-2 sm:gap-3">
           <LandingButton to="/entrar" variant="ghost" className="px-4 py-2.5">
