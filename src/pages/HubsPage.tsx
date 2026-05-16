@@ -1,12 +1,28 @@
+import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { SAMPLE_HUBS } from '@/data/sampleHubs'
+import {
+  pageStaggerContainer,
+  pageStaggerItem,
+  pageStaggerListInner,
+} from '@/motion/pageStagger'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 export function HubsPage() {
   const count = SAMPLE_HUBS.length
+  const reduced = usePrefersReducedMotion()
+  const c = pageStaggerContainer(reduced)
+  const item = pageStaggerItem(reduced)
+  const listInner = pageStaggerListInner(reduced)
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <header className="mb-10">
+    <motion.div
+      className="mx-auto max-w-6xl"
+      variants={c}
+      initial={reduced ? false : 'hidden'}
+      animate="visible"
+    >
+      <motion.header variants={item} className="mb-10">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
           <h1 className="text-3xl font-semibold tracking-tight text-primary">
             Hubs por concurso
@@ -20,11 +36,14 @@ export function HubsPage() {
           Cada hub agrupa salas e metas alinhadas ao edital — lista estática por
           enquanto.
         </p>
-      </header>
+      </motion.header>
 
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <motion.ul
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        variants={listInner}
+      >
         {SAMPLE_HUBS.map((hub) => (
-          <li key={hub.slug}>
+          <motion.li key={hub.slug} variants={item}>
             <Link
               to={`/hubs/${hub.slug}`}
               className="group relative block overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface to-elevated shadow-[0_0_0_1px_rgba(0,0,0,0.15)] transition hover:border-firefly/25 hover:shadow-[0_0_24px_-4px_rgba(216,255,94,0.12)]"
@@ -56,9 +75,9 @@ export function HubsPage() {
                 </div>
               </div>
             </Link>
-          </li>
+          </motion.li>
         ))}
-      </ul>
-    </div>
+      </motion.ul>
+    </motion.div>
   )
 }

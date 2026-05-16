@@ -1,6 +1,11 @@
 import { motion } from 'motion/react'
 import { useMemo, type ReactNode } from 'react'
-import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import {
+  pageStaggerContainer,
+  pageStaggerItem,
+  pageStaggerListInner,
+} from '@/motion/pageStagger'
 
 /** Placeholder até perfil vir do Supabase após auth. */
 const PROFILE_STUB = {
@@ -73,6 +78,9 @@ export function ProfilePage() {
   const reducedMotion = usePrefersReducedMotion()
   const p = PROFILE_STUB
   const initials = useMemo(() => initialsFromName(p.displayName), [p.displayName])
+  const c = pageStaggerContainer(reducedMotion)
+  const item = pageStaggerItem(reducedMotion)
+  const listInner = pageStaggerListInner(reducedMotion)
 
   const dash = '—'
   const nameLine = p.displayName?.trim() || dash
@@ -83,9 +91,6 @@ export function ProfilePage() {
   return (
     <div className="mx-auto max-w-2xl">
       <motion.article
-        initial={reducedMotion ? false : { opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         whileHover={
           reducedMotion
             ? undefined
@@ -99,8 +104,13 @@ export function ProfilePage() {
         />
         <LightningWatermark className="pointer-events-none absolute right-5 top-5 h-9 w-9 text-firefly/[0.12]" />
 
-        <div className="relative grid gap-8 p-8 pl-9 md:grid-cols-[auto_1fr] md:gap-10 md:p-10 md:pl-11">
-          <div className="flex flex-col items-center md:items-start">
+        <motion.div
+          variants={c}
+          initial={reducedMotion ? false : 'hidden'}
+          animate="visible"
+          className="relative grid gap-8 p-8 pl-9 md:grid-cols-[auto_1fr] md:gap-10 md:p-10 md:pl-11"
+        >
+          <motion.div variants={item} className="flex flex-col items-center md:items-start">
             <div className="relative">
               {!reducedMotion && (
                 <motion.div
@@ -126,19 +136,19 @@ export function ProfilePage() {
                 Offline
               </span>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="min-w-0 space-y-8">
-            <header>
+          <motion.div variants={listInner} className="min-w-0 space-y-8">
+            <motion.header variants={item}>
               <h1 className="text-2xl font-semibold tracking-tight text-primary">
                 Perfil
               </h1>
               <p className="mt-1.5 max-w-md text-sm leading-relaxed text-secondary">
                 Nome público, concurso-alvo e preferências de foco
               </p>
-            </header>
+            </motion.header>
 
-            <div className="space-y-6">
+            <motion.div variants={item} className="space-y-6">
               <FieldBlock label="Nome">{nameLine}</FieldBlock>
 
               <FieldBlock label="Hub principal">
@@ -171,11 +181,11 @@ export function ProfilePage() {
                   Em breve
                 </motion.span>
               </FieldBlock>
-            </div>
+            </motion.div>
 
-            <div className="h-px bg-border" />
-          </div>
-        </div>
+            <motion.div variants={item} className="h-px bg-border" />
+          </motion.div>
+        </motion.div>
       </motion.article>
     </div>
   )

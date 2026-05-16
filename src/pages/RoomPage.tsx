@@ -6,6 +6,11 @@ import { SAMPLE_HUBS } from '@/data/sampleHubs'
 import { DEFAULT_SOUNDSCAPES } from '@/data/defaultSoundscapes'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useRoomSoundscape } from '@/hooks/useRoomSoundscape'
+import {
+  pageStaggerContainer,
+  pageStaggerItem,
+  pageStaggerListInner,
+} from '@/motion/pageStagger'
 
 const FOCUS_MINUTES = 25
 const BREAK_MINUTES = 5
@@ -32,6 +37,9 @@ export function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const title = useMemo(() => roomTitle(roomId), [roomId])
   const prefersReducedMotion = usePrefersReducedMotion()
+  const staggerC = pageStaggerContainer(prefersReducedMotion)
+  const staggerItem = pageStaggerItem(prefersReducedMotion)
+  const staggerBtnRow = pageStaggerListInner(prefersReducedMotion)
 
   const entranceMs = useMemo(() => {
     if (prefersReducedMotion) return 420
@@ -132,56 +140,65 @@ export function RoomPage() {
       </motion.div>
 
       <motion.div
+        key={roomId ?? 'room'}
         className="relative z-10 flex min-h-dvh flex-col items-center justify-center px-6 pb-24 pt-16"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{
-          duration: entranceMs / 1000,
-          ease: easeInOut,
-        }}
+        variants={staggerC}
+        initial={prefersReducedMotion ? false : 'hidden'}
+        animate="visible"
       >
-        <p
+        <motion.p
+          variants={staggerItem}
           className={`text-center text-xs font-medium uppercase tracking-[0.2em] transition-opacity duration-500 ${chromeClass} ${
             phase === 'focus' ? 'text-firefly' : 'text-aqua'
           }`}
         >
           {phase === 'focus' ? 'Sessão de foco' : 'Pausa curta'}
-        </p>
+        </motion.p>
 
-        <h1 className="mt-3 text-center text-lg font-normal text-secondary transition-opacity duration-500 sm:text-xl">
+        <motion.h1
+          variants={staggerItem}
+          className="mt-3 text-center text-lg font-normal text-secondary transition-opacity duration-500 sm:text-xl"
+        >
           {title}
-        </h1>
+        </motion.h1>
 
-        <p
+        <motion.p
+          variants={staggerItem}
           className={`mt-2 text-center text-sm text-secondary transition-opacity duration-500 ${chromeClass}`}
         >
           {MOCK_PRESENT} presentes
-        </p>
+        </motion.p>
 
-        <p
+        <motion.p
+          variants={staggerItem}
           className={`mt-14 font-mono text-6xl font-light tabular-nums tracking-tight sm:text-7xl md:text-8xl ${phase === 'focus' ? 'text-primary' : 'text-aqua'}`}
         >
           {formatTime(remaining)}
-        </p>
+        </motion.p>
 
-        <div
+        <motion.div
+          variants={staggerBtnRow}
           className={`mt-12 flex flex-wrap items-center justify-center gap-3 transition-opacity duration-500 ${chromeClass}`}
         >
-          <button
-            type="button"
-            onClick={() => setRunning((r) => !r)}
-            className="pointer-events-auto rounded-xl bg-firefly px-6 py-3 text-sm font-medium text-night hover:brightness-110"
-          >
-            {running ? 'Pausar' : 'Iniciar'}
-          </button>
-          <button
-            type="button"
-            onClick={reset}
-            className="pointer-events-auto rounded-xl border border-border px-6 py-3 text-sm font-medium text-primary hover:bg-elevated"
-          >
-            Resetar
-          </button>
-        </div>
+          <motion.div variants={staggerItem}>
+            <button
+              type="button"
+              onClick={() => setRunning((r) => !r)}
+              className="pointer-events-auto rounded-xl bg-firefly px-6 py-3 text-sm font-medium text-night hover:brightness-110"
+            >
+              {running ? 'Pausar' : 'Iniciar'}
+            </button>
+          </motion.div>
+          <motion.div variants={staggerItem}>
+            <button
+              type="button"
+              onClick={reset}
+              className="pointer-events-auto rounded-xl border border-border px-6 py-3 text-sm font-medium text-primary hover:bg-elevated"
+            >
+              Resetar
+            </button>
+          </motion.div>
+        </motion.div>
       </motion.div>
 
       <div
