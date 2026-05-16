@@ -28,7 +28,7 @@ function roomTitle(roomId: string | undefined) {
   if (!roomId) return 'Sala de estudo'
   const hub = SAMPLE_HUBS.find((h) => h.slug === roomId)
   if (hub) return `Sala ${hub.name}`
-  if (roomId === 'demo') return 'Sala de demonstração'
+  if (roomId === 'demo') return ''
   const pretty = roomId.replace(/[-_]/g, ' ')
   return `Sala ${pretty.charAt(0).toUpperCase()}${pretty.slice(1)}`
 }

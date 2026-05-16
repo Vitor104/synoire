@@ -16,9 +16,10 @@ describe('rotas (smoke, sem backend)', () => {
     renderAt('/')
     expect(
       screen.getByRole('heading', {
-        name: /estudo coletivo sem ruído de rede social/i,
+        name: /estude junto/i,
       }),
     ).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /criar conta/i }).length).toBeGreaterThan(0)
   })
 
   it('renderiza o painel dentro do shell', () => {
@@ -45,7 +46,7 @@ describe('rotas (smoke, sem backend)', () => {
     renderAt('/salas/demo')
     expect(
       screen.getByRole('main', {
-        name: /sala de estudo: sala de demonstração/i,
+        name: /^sala de estudo:/i,
       }),
     ).toBeInTheDocument()
   })

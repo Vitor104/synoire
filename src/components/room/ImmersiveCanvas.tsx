@@ -86,8 +86,9 @@ export function ImmersiveCanvas({ presentCount }: ImmersiveCanvasProps) {
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const w = window.innerWidth
-      const h = window.innerHeight
+      const parent = canvas.parentElement
+      const w = Math.max(parent?.clientWidth ?? canvas.clientWidth, 1)
+      const h = Math.max(parent?.clientHeight ?? canvas.clientHeight, 1)
       canvas.width = Math.floor(w * dpr)
       canvas.height = Math.floor(h * dpr)
       canvas.style.width = `${w}px`
@@ -208,7 +209,7 @@ export function ImmersiveCanvas({ presentCount }: ImmersiveCanvasProps) {
   return (
     <canvas
       ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-0 h-full w-full"
+      className="pointer-events-none absolute inset-0 z-0 h-full w-full"
       aria-hidden
     />
   )
