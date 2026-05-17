@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ImmersiveCanvas } from '@/components/room/ImmersiveCanvas'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
-const MOCK_PRESENT = 128
+const MOCK_PRESENT = 28
 
 type StudyRoomPreviewProps = {
   size?: 'compact' | 'cinema' | 'hero'
@@ -106,7 +106,12 @@ export function StudyRoomPreview({
       }
     >
       <div className="absolute inset-0 z-0">
-        {active && <ImmersiveCanvas presentCount={MOCK_PRESENT} />}
+        {active && (
+          <ImmersiveCanvas
+            presentCount={MOCK_PRESENT}
+            variant="preview"
+          />
+        )}
       </div>
 
       <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-night/80 via-night/20 to-transparent" />

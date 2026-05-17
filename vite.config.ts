@@ -10,6 +10,11 @@ const rootDir = fileURLToPath(new URL('.', import.meta.url))
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    watch: {
+      ignored: ['**/node_modules/**', '**/dist/**'],
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(rootDir, 'src'),

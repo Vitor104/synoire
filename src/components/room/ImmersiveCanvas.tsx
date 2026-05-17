@@ -61,6 +61,8 @@ function initStars(
 type ImmersiveCanvasProps = {
   /** Número de “presenças” mock — limitado internamente por performance */
   presentCount: number
+  /** Sala real vs prévia na landing (menos entidades e efeitos) */
+  variant?: 'room' | 'preview'
   /** Multiplicador de movimento (ex.: 0.35 na pré-sala) */
   motionSpeed?: number
   /** Velocidade do pulso individual (default 0.0025) */
@@ -71,6 +73,7 @@ type ImmersiveCanvasProps = {
 
 export function ImmersiveCanvas({
   presentCount,
+  variant = 'room',
   motionSpeed = 1,
   pulseSpeed = 0.0025,
   syncFlashUntil = 0,
@@ -96,14 +99,19 @@ export function ImmersiveCanvas({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const maxFlies = reduced ? 18 : 72
+    const isPreview = variant === 'preview'
+    const maxFlies = reduced ? 18 : isPreview ? 32 : 72
     const n = Math.min(Math.max(4, presentCount), maxFlies)
+    const starCount = reduced ? 40 : isPreview ? 50 : 90
+    const dprCap = isPreview ? 1 : 2
+    const shadowScale = isPreview ? 0.55 : 1
 
     let raf = 0
     let t0 = performance.now()
+    let visible = document.visibilityState !== 'hidden'
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const dpr = Math.min(window.devicePixelRatio || 1, dprCap)
       const parent = canvas.parentElement
       const w = Math.max(parent?.clientWidth ?? canvas.clientWidth, 1)
       const h = Math.max(parent?.clientHeight ?? canvas.clientHeight, 1)
@@ -113,7 +121,7 @@ export function ImmersiveCanvas({
       canvas.style.height = `${h}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       const rand = randRef.current
-      starsRef.current = initStars(reduced ? 40 : 90, w, h, rand)
+      starsRef.current = initStars(starCount, w, h, rand)
       firefliesRef.current = initFireflies(n, w, h, rand)
     }
 
@@ -212,7 +220,9 @@ export function ImmersiveCanvas({
             0.65 * Math.sin(f.phase + t * pulseSpeedRef.current * f.pulse)
         const r = 2 + glow * 2.2
         ctx.shadowColor = '#d8ff5e'
-        ctx.shadowBlur = reduced ? 6 : 14 + glow * 10
+        ctx.shadowBlur = reduced
+          ? 6
+          : (14 + glow * 10) * shadowScale
         ctx.fillStyle = `rgba(216, 255, 94, ${0.45 + glow * 0.45})`
         ctx.beginPath()
         ctx.arc(f.x, f.y, r, 0, Math.PI * 2)
@@ -220,15 +230,31 @@ export function ImmersiveCanvas({
         ctx.shadowBlur = 0
       }
 
-      raf = requestAnimationFrame(loop)
+      if (visible) raf = requestAnimationFrame(loop)
     }
 
-    raf = requestAnimationFrame(loop)
+    const onVisibility = () => {
+      const nowVisible = document.visibilityState !== 'hidden'
+      if (nowVisible === visible) return
+      visible = nowVisible
+      if (visible) {
+        t0 = performance.now()
+        raf = requestAnimationFrame(loop)
+      } else {
+        cancelAnimationFrame(raf)
+        raf = 0
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibility)
+    if (visible) raf = requestAnimationFrame(loop)
+
     return () => {
       cancelAnimationFrame(raf)
+      document.removeEventListener('visibilitychange', onVisibility)
       ro.disconnect()
     }
-  }, [presentCount, reduced])
+  }, [presentCount, reduced, variant])
 
   return (
     <canvas
