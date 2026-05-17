@@ -3,10 +3,21 @@ export type DefaultSoundscape = {
   id: string
   label: string
   file: string
+  isPremium?: boolean
 }
 
 export const DEFAULT_SOUNDSCAPES: DefaultSoundscape[] = [
   { id: 'aurora-stillness', label: 'Aurora Stillness', file: '/soundscapes/aurora-stillness.mp3' },
-  { id: 'firefly-study-grove', label: 'Firefly Study Grove', file: '/soundscapes/firefly-study-grove.mp3' },
-  { id: 'rain-at-glass-night', label: 'Rain at Glass Night', file: '/soundscapes/rain-at-glass-night.mp3' },
+  {
+    id: 'firefly-study-grove',
+    label: 'Firefly Study Grove',
+    file: '/soundscapes/firefly-study-grove.mp3',
+    isPremium: true,
+  },
+  {
+    id: 'rain-at-glass-night',
+    label: 'Rain at Glass Night',
+    file: '/soundscapes/rain-at-glass-night.mp3',
+    isPremium: true,
+  },
 ]

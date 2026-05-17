@@ -26,6 +26,7 @@ export type CreateRoomInput = {
   hubSlug: string
   theme: string
   focusCycle: FocusCycle
+  isPrivate?: boolean
 }
 
 export type HubRoomsAdapter = {

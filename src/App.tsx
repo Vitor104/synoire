@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { GlowPaywallModal } from '@/components/premium/GlowPaywallModal'
 import { AppShell } from '@/components/layout/AppShell'
+import { UserPlanProvider } from '@/contexts/UserPlanContext'
 import { AuthPage } from '@/pages/AuthPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { HomePage } from '@/pages/HomePage'
@@ -27,8 +29,11 @@ export function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <UserPlanProvider>
+      <BrowserRouter>
+        <AppRoutes />
+        <GlowPaywallModal />
+      </BrowserRouter>
+    </UserPlanProvider>
   )
 }

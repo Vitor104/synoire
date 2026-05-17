@@ -43,10 +43,14 @@ export function HubDetailPage() {
     )
   }
 
-  const handleCreate = async (theme: string, focusCycle: Parameters<typeof createRoom>[1]) => {
+  const handleCreate = async (
+    theme: string,
+    focusCycle: Parameters<typeof createRoom>[1],
+    isPrivate: boolean,
+  ) => {
     setIsSubmitting(true)
     try {
-      const room = await createRoom(theme, focusCycle)
+      const room = await createRoom(theme, focusCycle, isPrivate)
       navigate(`/salas/${room.id}`, { state: { sessionStart: 'lounge' } })
     } finally {
       setIsSubmitting(false)

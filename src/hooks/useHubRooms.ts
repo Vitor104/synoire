@@ -42,9 +42,9 @@ export function useHubRooms(hubSlug: string | undefined) {
   }, [adapter, refresh])
 
   const createRoom = useCallback(
-    async (theme: string, focusCycle: FocusCycle) => {
+    async (theme: string, focusCycle: FocusCycle, isPrivate = false) => {
       if (!hubSlug) throw new Error('Hub inválido')
-      const input: CreateRoomInput = { hubSlug, theme, focusCycle }
+      const input: CreateRoomInput = { hubSlug, theme, focusCycle, isPrivate }
       const room = await adapter.createRoom(input)
       await refresh()
       return room

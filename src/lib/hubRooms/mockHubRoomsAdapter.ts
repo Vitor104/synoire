@@ -60,14 +60,21 @@ function createStudyRoom(input: CreateRoomInput): StudyRoom {
   if (!validation.ok) throw new Error(validation.error)
 
   const now = new Date().toISOString()
-  const payload = buildCreatePayload(input.hubSlug, validation.value, input.focusCycle, now)
+  const isPrivate = input.isPrivate ?? false
+  const payload = buildCreatePayload(
+    input.hubSlug,
+    validation.value,
+    input.focusCycle,
+    now,
+    isPrivate,
+  )
   const room: StudyRoom = {
     id: crypto.randomUUID(),
     hub_slug: input.hubSlug,
     name: payload.name,
     theme: validation.value,
     focus_cycle: input.focusCycle,
-    is_private: false,
+    is_private: isPrivate,
     current_timer_state: payload.current_timer_state,
     present_count: 0,
     empty_since: now,

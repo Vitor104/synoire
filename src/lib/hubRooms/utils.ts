@@ -15,14 +15,14 @@ import {
 export { THEME_MAX_LENGTH } from './types'
 
 export function buildRoomName(theme: string, cycle: FocusCycle): string {
-  return `${theme.trim()} • ${cycle}`
+  return `${theme.trim()} \u2022 ${cycle}`
 }
 
 export function validateTheme(theme: string): { ok: true; value: string } | { ok: false; error: string } {
   const value = theme.trim()
   if (!value) return { ok: false, error: 'Informe o tema do estudo.' }
   if (value.length > MAX_LEN) {
-    return { ok: false, error: `Máximo de ${MAX_LEN} caracteres.` }
+    return { ok: false, error: `M\u00e1ximo de ${MAX_LEN} caracteres.` }
   }
   return { ok: true, value }
 }
@@ -66,12 +66,13 @@ export function buildCreatePayload(
   theme: string,
   cycle: FocusCycle,
   prepStartedAt: string = new Date().toISOString(),
+  isPrivate = false,
 ) {
   const trimmed = theme.trim()
   return {
     hub_slug: hubSlug,
     name: buildRoomName(trimmed, cycle),
-    is_private: false,
+    is_private: isPrivate,
     current_timer_state: buildIdleTimerState(cycle, prepStartedAt),
   }
 }
@@ -107,7 +108,7 @@ export function formatRoomCardTimeLabel(
   }
 
   if (state.status === 'idle') {
-    return `Começa em ${formatTimerSeconds(getPrepRemainingSeconds(state, now))}`
+    return `Come\u00e7a em ${formatTimerSeconds(getPrepRemainingSeconds(state, now))}`
   }
 
   if (state.status === 'break' && state.started_at) {
@@ -116,7 +117,7 @@ export function formatRoomCardTimeLabel(
       { phase: 'break', startedAt: state.started_at },
       timerPayloadToCycleConfig(state),
     )
-    return `Começa em ${formatTimerSeconds(secs)}`
+    return `Come\u00e7a em ${formatTimerSeconds(secs)}`
   }
 
   if (state.status === 'focus' && state.started_at) {
@@ -125,10 +126,10 @@ export function formatRoomCardTimeLabel(
       { phase: 'focus', startedAt: state.started_at },
       timerPayloadToCycleConfig(state),
     )
-    return `Começa em ${formatTimerSeconds(secs)}`
+    return `Come\u00e7a em ${formatTimerSeconds(secs)}`
   }
 
-  return `Começa em ${formatTimerSeconds(ROOM_PREP_SECONDS)}`
+  return `Come\u00e7a em ${formatTimerSeconds(ROOM_PREP_SECONDS)}`
 }
 
 export function timerPayloadToRoomPhase(

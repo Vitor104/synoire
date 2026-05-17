@@ -6,6 +6,8 @@ import { PreRoomLounge } from '@/components/room/PreRoomLounge'
 import { RoomChat, RoomChatToggleButton } from '@/components/room/RoomChat'
 import { SessionOnboarding } from '@/components/room/SessionOnboarding'
 import { SAMPLE_HUBS } from '@/data/sampleHubs'
+import { LockIcon } from '@/components/premium/LockIcon'
+import { useUserPlan } from '@/contexts/UserPlanContext'
 import { DEFAULT_SOUNDSCAPES } from '@/data/defaultSoundscapes'
 import { useGlobalRoomTimer } from '@/hooks/useGlobalRoomTimer'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
@@ -57,6 +59,7 @@ export function RoomPage() {
     [roomId, studyRoom?.name],
   )
   const prefersReducedMotion = usePrefersReducedMotion()
+  const { hasGlowAccess, openPaywall } = useUserPlan()
   const staggerC = pageStaggerContainer(prefersReducedMotion)
   const staggerItem = pageStaggerItem(prefersReducedMotion)
 
@@ -418,17 +421,29 @@ export function RoomPage() {
             Synoire default
           </p>
           <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-sm">
-            {DEFAULT_SOUNDSCAPES.map((t) => (
-              <li key={t.id}>
-                <button
-                  type="button"
-                  className="w-full rounded-lg px-2 py-2 text-left text-primary hover:bg-elevated"
-                  onClick={() => void sound.playLibraryTrack(t.file, t.label)}
-                >
-                  {t.label}
-                </button>
-              </li>
-            ))}
+            {DEFAULT_SOUNDSCAPES.map((t) => {
+              const locked = t.isPremium && !hasGlowAccess
+              return (
+                <li key={t.id}>
+                  <button
+                    type="button"
+                    className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left hover:bg-elevated ${
+                      locked ? 'text-secondary/70' : 'text-primary'
+                    }`}
+                    onClick={() => {
+                      if (locked) {
+                        openPaywall()
+                        return
+                      }
+                      void sound.playLibraryTrack(t.file, t.label)
+                    }}
+                  >
+                    <span>{t.label}</span>
+                    {locked && <LockIcon className="h-4 w-4 shrink-0 text-firefly/70" />}
+                  </button>
+                </li>
+              )
+            })}
           </ul>
 
           <p className="mt-4 text-xs text-secondary">
