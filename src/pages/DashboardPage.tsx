@@ -1,4 +1,5 @@
 import { motion, type Variants } from 'motion/react'
+import { FocusPatterns } from '@/components/dashboard/FocusPatterns'
 import { GlowLockedOverlay } from '@/components/premium/GlowLockedOverlay'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import {
@@ -159,6 +160,10 @@ export function DashboardPage() {
             })}
           </div>
         </GlowLockedOverlay>
+      </motion.section>
+
+      <motion.section variants={item} className="mt-6">
+        <FocusPatterns />
       </motion.section>
     </motion.div>
   )

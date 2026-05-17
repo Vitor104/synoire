@@ -24,18 +24,31 @@ export function GlowPaywallModal() {
   const staggerC = pageStaggerContainer(prefersReducedMotion)
   const staggerItem = pageStaggerItem(prefersReducedMotion)
 
-  const handleGodKey = useCallback(
+  const tryActivateGodKey = useCallback(() => {
+    const key = prompt('Enter God Key:')
+    if (key === null) return false
+    if (key === GOD_KEY) {
+      setPlanTier('glow')
+      closePaywall()
+      alert('✨ MODO GLOW ATIVADO COM SUCESSO (SIMULADO)!')
+      return true
+    }
+    alert('Chave inválida. Tente novamente ou use "Talvez depois".')
+    return false
+  }, [setPlanTier, closePaywall])
+
+  const handleTitleGodKey = useCallback(
     (e: React.MouseEvent) => {
       if (!e.shiftKey) return
-      const key = prompt('Enter God Key:')
-      if (key === GOD_KEY) {
-        setPlanTier('glow')
-        closePaywall()
-        alert('✨ MODO GLOW ATIVADO COM SUCESSO (SIMULADO)!')
-      }
+      tryActivateGodKey()
     },
-    [setPlanTier, closePaywall],
+    [tryActivateGodKey],
   )
+
+  const handleUpgrade = useCallback(() => {
+    // Stripe ainda não conectado — fluxo de teste via God Key no CTA principal.
+    tryActivateGodKey()
+  }, [tryActivateGodKey])
 
   useEffect(() => {
     if (!paywallOpen) return
@@ -70,7 +83,7 @@ export function GlowPaywallModal() {
               id="glow-paywall-title"
               variants={staggerItem}
               className="cursor-default text-lg font-semibold leading-snug text-primary"
-              onDoubleClick={handleGodKey}
+              onDoubleClick={handleTitleGodKey}
             >
               Desperte seu foco absoluto. Assine o Synoire Glow.
             </motion.h2>
@@ -87,7 +100,7 @@ export function GlowPaywallModal() {
             <motion.div variants={staggerItem} className="mt-8 flex flex-col gap-3">
               <button
                 type="button"
-                onClick={closePaywall}
+                onClick={handleUpgrade}
                 className="w-full rounded-xl bg-firefly px-4 py-3 text-sm font-medium text-night hover:brightness-110"
               >
                 Fazer Upgrade
