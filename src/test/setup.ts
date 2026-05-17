@@ -3,12 +3,16 @@ import '@testing-library/jest-dom/vitest'
 class MockIntersectionObserver implements IntersectionObserver {
   readonly root: Element | Document | null = null
   readonly rootMargin = ''
+  readonly scrollMargin = ''
   readonly thresholds: readonly number[] = []
+  #callback: IntersectionObserverCallback
 
-  constructor(private callback: IntersectionObserverCallback) {}
+  constructor(callback: IntersectionObserverCallback) {
+    this.#callback = callback
+  }
 
   observe(target: Element) {
-    this.callback(
+    this.#callback(
       [{ isIntersecting: true, target } as IntersectionObserverEntry],
       this,
     )

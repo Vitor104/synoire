@@ -3,12 +3,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ImmersiveCanvas } from '@/components/room/ImmersiveCanvas'
 import { PreRoomLounge } from '@/components/room/PreRoomLounge'
+import { RoomChat, RoomChatToggleButton } from '@/components/room/RoomChat'
 import { SessionOnboarding } from '@/components/room/SessionOnboarding'
 import { SAMPLE_HUBS } from '@/data/sampleHubs'
 import { DEFAULT_SOUNDSCAPES } from '@/data/defaultSoundscapes'
 import { useGlobalRoomTimer } from '@/hooks/useGlobalRoomTimer'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { useRoomChat } from '@/hooks/useRoomChat'
 import { useRoomSoundscape } from '@/hooks/useRoomSoundscape'
+import { canSendRoomChat } from '@/lib/roomChat'
 import { formatTimerSeconds } from '@/lib/roomTimer'
 import {
   pageStaggerContainer,
@@ -45,6 +48,7 @@ export function RoomPage() {
 
   const [chromeLit, setChromeLit] = useState(false)
   const [soundOpen, setSoundOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
   const idleTimerRef = useRef<number | null>(null)
   const prevPhaseRef = useRef(phase)
   const loungePromotedRef = useRef(false)
@@ -60,6 +64,21 @@ export function RoomPage() {
   const isLounge = sessionMode === 'lounge'
   const isActive = sessionMode === 'active'
   const showChrome = isActive
+  const chatEnabled = isLounge || isActive
+  const canSendMessage = canSendRoomChat(sessionMode, phase)
+
+  const roomChat = useRoomChat({
+    roomId,
+    panelOpen: chatOpen,
+    enabled: chatEnabled,
+  })
+
+  const toggleChat = useCallback(() => {
+    setChatOpen((open) => {
+      if (!open) setSoundOpen(false)
+      return !open
+    })
+  }, [])
 
   const playCycleStartRitual = useCallback(() => {
     if (prefersReducedMotion) {
@@ -233,6 +252,11 @@ export function RoomPage() {
             Sair
           </Link>
           <motion.div className="pointer-events-auto flex items-center gap-2">
+            <RoomChatToggleButton
+              open={chatOpen}
+              unreadCount={roomChat.unreadCount}
+              onClick={toggleChat}
+            />
             <button
               type="button"
               onClick={() => setSoundOpen((o) => !o)}
@@ -245,7 +269,32 @@ export function RoomPage() {
         </motion.div>
       )}
 
-      {showChrome && soundOpen && (
+      {isLounge && (
+        <div className="pointer-events-none fixed right-0 top-0 z-20 p-4 sm:p-6">
+          <RoomChatToggleButton
+            open={chatOpen}
+            unreadCount={roomChat.unreadCount}
+            onClick={toggleChat}
+            className="pointer-events-auto"
+          />
+        </div>
+      )}
+
+      {chatEnabled && (
+        <RoomChat
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          canSendMessage={canSendMessage}
+          prefersReducedMotion={prefersReducedMotion}
+          messages={roomChat.messages}
+          loading={roomChat.loading}
+          sending={roomChat.sending}
+          currentUserId={roomChat.currentUserId}
+          onSend={roomChat.sendMessage}
+        />
+      )}
+
+      {showChrome && soundOpen && !chatOpen && (
         <div
           className="pointer-events-auto fixed right-4 top-14 z-30 w-[min(100%-2rem,20rem)] rounded-2xl border border-border bg-surface p-4 shadow-lg sm:right-6"
           role="dialog"

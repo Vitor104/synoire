@@ -6,9 +6,7 @@ export type DefaultSoundscape = {
 }
 
 export const DEFAULT_SOUNDSCAPES: DefaultSoundscape[] = [
-  { id: 'night-bloom', label: 'Night Bloom', file: '/soundscapes/night-bloom.mp3' },
-  { id: 'silent-orbit', label: 'Silent Orbit', file: '/soundscapes/silent-orbit.mp3' },
-  { id: 'firelight', label: 'Firelight', file: '/soundscapes/firelight.mp3' },
-  { id: 'nocturne-flow', label: 'Nocturne Flow', file: '/soundscapes/nocturne-flow.mp3' },
-  { id: 'forest-pulse', label: 'Forest Pulse', file: '/soundscapes/forest-pulse.mp3' },
+  { id: 'aurora-stillness', label: 'Aurora Stillness', file: '/soundscapes/aurora-stillness.mp3' },
+  { id: 'firefly-study-grove', label: 'Firefly Study Grove', file: '/soundscapes/firefly-study-grove.mp3' },
+  { id: 'rain-at-glass-night', label: 'Rain at Glass Night', file: '/soundscapes/rain-at-glass-night.mp3' },
 ]
