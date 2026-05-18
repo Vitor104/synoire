@@ -1,19 +1,16 @@
 import { motion } from 'motion/react'
-import { useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { useProfile } from '@/hooks/useProfile'
+import { formatTargetExamSlug, MAX_BIO_LENGTH } from '@/lib/profile'
 import {
   pageStaggerContainer,
   pageStaggerItem,
   pageStaggerListInner,
 } from '@/motion/pageStagger'
 
-/** Placeholder até perfil vir do Supabase após auth. */
-const PROFILE_STUB = {
-  displayName: null as string | null,
-  mainHub: null as string | null,
-  targetExam: null as string | null,
-  bio: null as string | null,
-}
+const inputClass =
+  'mt-2 w-full rounded-xl border border-border bg-night/60 px-4 py-3 text-sm text-primary placeholder:text-secondary/60 focus:border-firefly/40 focus:outline-none focus:ring-1 focus:ring-firefly/30'
 
 function initialsFromName(name: string | null): string {
   if (!name?.trim()) return 'US'
@@ -76,20 +73,72 @@ function HubGlyph({ className }: { className?: string }) {
 
 export function ProfilePage() {
   const reducedMotion = usePrefersReducedMotion()
-  const p = PROFILE_STUB
-  const initials = useMemo(() => initialsFromName(p.displayName), [p.displayName])
+  const { profile, isLoading, error, isSaving, updateFocus } = useProfile()
+  const [targetExamInput, setTargetExamInput] = useState('')
+  const [bioInput, setBioInput] = useState('')
+  const [formError, setFormError] = useState<string | null>(null)
+  const [formSuccess, setFormSuccess] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!profile) return
+    setTargetExamInput(profile.targetExam ?? '')
+    setBioInput(profile.bio ?? '')
+  }, [profile])
+
   const c = pageStaggerContainer(reducedMotion)
   const item = pageStaggerItem(reducedMotion)
   const listInner = pageStaggerListInner(reducedMotion)
 
   const dash = '—'
-  const nameLine = p.displayName?.trim() || dash
-  const hubLine = p.mainHub?.trim() || dash
-  const examLine = p.targetExam?.trim() || dash
-  const bioText = p.bio?.trim()
+  const displayName = profile?.displayName ?? null
+  const initials = useMemo(() => initialsFromName(displayName), [displayName])
+  const nameLine = displayName?.trim() || dash
+  const hubLine = dash
+  const examLine = formatTargetExamSlug(profile?.targetExam) ?? profile?.targetExam?.trim() ?? dash
+  const bioText = profile?.bio?.trim()
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setFormError(null)
+    setFormSuccess(null)
+
+    const result = await updateFocus({
+      targetExam: targetExamInput,
+      bio: bioInput,
+    })
+
+    if (result.ok) {
+      setFormSuccess('Foco atualizado com sucesso.')
+    } else {
+      setFormError(result.message)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <motion.div
+        className="mx-auto flex max-w-2xl items-center justify-center py-24 text-secondary"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        aria-busy="true"
+        aria-label="Carregando perfil"
+      >
+        <span className="text-sm">Carregando…</span>
+      </motion.div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
+      {error && (
+        <p
+          className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral"
+          role="alert"
+        >
+          {error}
+        </p>
+      )}
+
       <motion.article
         whileHover={
           reducedMotion
@@ -98,7 +147,7 @@ export function ProfilePage() {
         }
         className="group relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface to-elevated shadow-[0_0_0_1px_rgba(0,0,0,0.2)]"
       >
-        <div
+        <motion.div
           className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-firefly shadow-[0_0_24px_rgba(163,163,79,0.35)]"
           aria-hidden
         />
@@ -111,7 +160,7 @@ export function ProfilePage() {
           className="relative grid gap-8 p-8 pl-9 md:grid-cols-[auto_1fr] md:gap-10 md:p-10 md:pl-11"
         >
           <motion.div variants={item} className="flex flex-col items-center md:items-start">
-            <div className="relative">
+            <motion.div className="relative">
               {!reducedMotion && (
                 <motion.div
                   className="absolute -inset-3 rounded-full bg-firefly/25 blur-xl"
@@ -126,10 +175,10 @@ export function ProfilePage() {
                   }}
                 />
               )}
-              <div className="relative flex h-[5.5rem] w-[5.5rem] items-center justify-center rounded-full bg-gradient-to-br from-firefly to-aqua text-lg font-bold tracking-tight text-night shadow-[0_0_0_3px_rgba(163,163,79,0.35),0_0_28px_rgba(163,163,79,0.2)]">
+              <motion.div className="relative flex h-[5.5rem] w-[5.5rem] items-center justify-center rounded-full bg-gradient-to-br from-firefly to-aqua text-lg font-bold tracking-tight text-night shadow-[0_0_0_3px_rgba(163,163,79,0.35),0_0_28px_rgba(163,163,79,0.2)]">
                 {initials}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
             <div className="mt-5 flex items-center gap-2 rounded-full border border-border bg-night/60 px-3 py-1.5">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-secondary/70" />
               <span className="text-[0.65rem] font-medium uppercase tracking-widest text-secondary">
@@ -184,6 +233,75 @@ export function ProfilePage() {
             </motion.div>
 
             <motion.div variants={item} className="h-px bg-border" />
+
+            <motion.section variants={item} className="space-y-4">
+              <motion.div>
+                <h2 className="text-sm font-semibold text-primary">Definir foco</h2>
+                <p className="mt-1 text-sm text-secondary">
+                  Atualize seu concurso-alvo e bio públicos
+                </p>
+              </motion.div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <label className="block text-sm text-secondary" htmlFor="profile-target-exam">
+                  Concurso-alvo
+                  <input
+                    id="profile-target-exam"
+                    type="text"
+                    value={targetExamInput}
+                    onChange={(e) => {
+                      setTargetExamInput(e.target.value)
+                      setFormError(null)
+                      setFormSuccess(null)
+                    }}
+                    placeholder="policia-federal"
+                    autoComplete="off"
+                    className={inputClass}
+                    disabled={isSaving}
+                  />
+                </label>
+
+                <label className="block text-sm text-secondary" htmlFor="profile-bio">
+                  Bio
+                  <textarea
+                    id="profile-bio"
+                    value={bioInput}
+                    onChange={(e) => {
+                      setBioInput(e.target.value)
+                      setFormError(null)
+                      setFormSuccess(null)
+                    }}
+                    placeholder="Estudando 4h por dia. Rumo à aprovação!"
+                    rows={4}
+                    maxLength={MAX_BIO_LENGTH}
+                    className={`${inputClass} resize-y`}
+                    disabled={isSaving}
+                  />
+                </label>
+
+                {(formError || formSuccess) && (
+                  <p
+                    role="status"
+                    className={
+                      formError
+                        ? 'text-sm text-coral'
+                        : 'text-sm text-firefly'
+                    }
+                  >
+                    {formError ?? formSuccess}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  aria-busy={isSaving}
+                  className="rounded-xl bg-firefly px-5 py-2.5 text-sm font-medium text-night transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSaving ? 'Salvando…' : 'Salvar foco'}
+                </button>
+              </form>
+            </motion.section>
           </motion.div>
         </motion.div>
       </motion.article>

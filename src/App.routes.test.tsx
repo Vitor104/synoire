@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/lib/supabase', () => ({
+  isSupabaseConfigured: false,
+  getSupabase: () => null,
+}))
 import { AppRoutes } from './App'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { JoinedHubsProvider } from '@/contexts/JoinedHubsContext'
