@@ -5,7 +5,12 @@ import {
   secondsUntilNextFocus,
   type RoomCycleConfig,
 } from '@/lib/roomTimer'
-import type { FocusCycle, RoomTimerPayload, StudyRoom } from './types'
+import type {
+  FocusCycle,
+  PersistedTimerState,
+  RoomTimerPayload,
+  StudyRoom,
+} from './types'
 import {
   ROOM_EMPTY_TTL_HOURS,
   ROOM_PREP_SECONDS,
@@ -30,13 +35,14 @@ export function validateTheme(theme: string): { ok: true; value: string } | { ok
 export function buildIdleTimerState(
   cycle: FocusCycle,
   prepStartedAt: string = new Date().toISOString(),
-): RoomTimerPayload {
+): PersistedTimerState {
   const { focusSec, breakSec } = getCycleDurations(cycle)
   return {
     status: 'idle',
     started_at: prepStartedAt,
     focus_sec: focusSec,
     break_sec: breakSec,
+    focus_cycle: cycle,
   }
 }
 

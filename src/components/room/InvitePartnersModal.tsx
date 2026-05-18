@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { PartnerAvatar } from '@/components/dashboard/PartnerAvatar'
 import { AppToast } from '@/components/ui/AppToast'
 import type { StudyPartnerView } from '@/lib/studyPartners'
-import { grantRoomAccess, hasRoomAccess } from '@/lib/roomAccess'
+import { grantRoomAccess, listRoomAccess } from '@/lib/roomAccess'
 import {
   pageStaggerContainer,
   pageStaggerItem,
@@ -26,24 +26,38 @@ export function InvitePartnersModal({
 }: InvitePartnersModalProps) {
   const [grantedIds, setGrantedIds] = useState<Set<string>>(() => new Set())
   const [toast, setToast] = useState({ message: '', visible: false })
+  const [loadingGrants, setLoadingGrants] = useState(false)
 
   const staggerC = pageStaggerContainer(prefersReducedMotion)
   const staggerItem = pageStaggerItem(prefersReducedMotion)
 
   useEffect(() => {
     if (!open) return
-    setGrantedIds(
-      new Set(partners.filter((p) => hasRoomAccess(roomId, p.id)).map((p) => p.id)),
-    )
-  }, [open, roomId, partners])
+    let cancelled = false
+    setLoadingGrants(true)
+    void listRoomAccess(roomId).then((result) => {
+      if (cancelled) return
+      if (result.ok) {
+        setGrantedIds(new Set(result.data.map((g) => g.userId)))
+      }
+      setLoadingGrants(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, roomId])
 
   const handleClose = useCallback(() => {
     onClose()
   }, [onClose])
 
   const handleGrant = useCallback(
-    (partnerId: string, displayName: string) => {
-      grantRoomAccess(roomId, partnerId)
+    async (partnerId: string, displayName: string) => {
+      const result = await grantRoomAccess(roomId, partnerId)
+      if (!result.ok) {
+        setToast({ message: result.message, visible: true })
+        return
+      }
       setGrantedIds((prev) => new Set(prev).add(partnerId))
       setToast({ message: `Convite enviado para ${displayName}.`, visible: true })
     },
@@ -97,7 +111,11 @@ export function InvitePartnersModal({
                 variants={staggerItem}
                 className="min-h-0 flex-1 overflow-y-auto px-4 py-2"
               >
-                {partners.length === 0 ? (
+                {loadingGrants ? (
+                  <li className="px-2 py-6 text-center text-sm text-secondary">
+                    Carregando convites…
+                  </li>
+                ) : partners.length === 0 ? (
                   <li className="px-2 py-6 text-center text-sm text-secondary">
                     Você ainda não tem parceiros aceitos.
                   </li>
@@ -110,7 +128,7 @@ export function InvitePartnersModal({
                         className="flex items-center gap-3 rounded-xl px-2 py-2.5"
                       >
                         <PartnerAvatar partner={partner} className="h-9 w-9" />
-                        <div className="min-w-0 flex-1">
+                        <motion.div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-primary">
                             {partner.displayName}
                           </p>
@@ -118,11 +136,11 @@ export function InvitePartnersModal({
                             🔥 {partner.currentStreak}{' '}
                             {partner.currentStreak === 1 ? 'dia' : 'dias'}
                           </p>
-                        </div>
+                        </motion.div>
                         <button
                           type="button"
                           disabled={sent}
-                          onClick={() => handleGrant(partner.id, partner.displayName)}
+                          onClick={() => void handleGrant(partner.id, partner.displayName)}
                           className="shrink-0 rounded-lg border border-firefly/30 bg-firefly/10 px-2.5 py-1.5 text-[11px] font-medium text-firefly transition hover:brightness-110 disabled:cursor-default disabled:border-white/10 disabled:bg-white/5 disabled:text-secondary"
                         >
                           {sent ? 'Enviado' : 'Enviar Convite'}

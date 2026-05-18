@@ -72,10 +72,15 @@ function createStudyRoom(input: CreateRoomInput): StudyRoom {
     id: crypto.randomUUID(),
     hub_slug: input.hubSlug,
     name: payload.name,
-    theme: validation.value,
     focus_cycle: input.focusCycle,
     is_private: isPrivate,
-    current_timer_state: payload.current_timer_state,
+    creator_id: input.creatorId ?? 'demo-user',
+    current_timer_state: {
+      status: payload.current_timer_state.status,
+      started_at: payload.current_timer_state.started_at,
+      focus_sec: payload.current_timer_state.focus_sec,
+      break_sec: payload.current_timer_state.break_sec,
+    },
     present_count: 0,
     empty_since: now,
     created_at: now,
@@ -168,7 +173,7 @@ export const mockHubRoomsAdapter: HubRoomsAdapter = {
     })
   },
 
-  subscribe(onChange) {
+  subscribe(onChange, _hubSlug) {
     if (typeof BroadcastChannel === 'undefined') return () => {}
     const ch = new BroadcastChannel(CHANNEL_NAME)
     ch.onmessage = () => onChange()

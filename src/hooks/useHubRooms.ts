@@ -1,12 +1,23 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useHubs } from '@/contexts/HubsContext'
 import {
   getHubRoomsAdapter,
+  HubRoomError,
   type CreateRoomInput,
   type FocusCycle,
   type StudyRoom,
 } from '@/lib/hubRooms'
+import { filterVisibleRooms } from '@/lib/hubRooms/utils'
+import { useRoomsPresenceMap } from '@/hooks/useRoomPresence'
+
+export type CreateRoomResult =
+  | { ok: true; room: StudyRoom }
+  | { ok: false; message: string; code?: 'forbidden' }
 
 export function useHubRooms(hubSlug: string | undefined) {
+  const { user } = useAuth()
+  const { getHubId } = useHubs()
   const [rooms, setRooms] = useState<StudyRoom[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -38,19 +49,67 @@ export function useHubRooms(hubSlug: string | undefined) {
   useEffect(() => {
     return adapter.subscribe(() => {
       void refresh()
+    }, hubSlug)
+  }, [adapter, refresh, hubSlug])
+
+  const roomIds = useMemo(() => rooms.map((r) => r.id), [rooms])
+  const presenceMap = useRoomsPresenceMap(roomIds)
+
+  const roomsWithPresence = useMemo(() => {
+    const merged = rooms.map((room) => {
+      const presence = presenceMap[room.id]
+      if (!presence) return room
+      return {
+        ...room,
+        present_count: presence.presentCount,
+        empty_since: presence.emptySince,
+      }
     })
-  }, [adapter, refresh])
+    return filterVisibleRooms(merged)
+  }, [rooms, presenceMap])
 
   const createRoom = useCallback(
-    async (theme: string, focusCycle: FocusCycle, isPrivate = false) => {
-      if (!hubSlug) throw new Error('Hub inválido')
-      const input: CreateRoomInput = { hubSlug, theme, focusCycle, isPrivate }
-      const room = await adapter.createRoom(input)
-      await refresh()
-      return room
+    async (
+      theme: string,
+      focusCycle: FocusCycle,
+      isPrivate = false,
+    ): Promise<CreateRoomResult> => {
+      if (!hubSlug) {
+        return { ok: false, message: 'Hub inválido.' }
+      }
+      if (!user?.id) {
+        return { ok: false, message: 'Entre na sua conta para criar uma sala.' }
+      }
+      const hubId = getHubId(hubSlug)
+      if (!hubId) {
+        return { ok: false, message: 'Hub não encontrado.' }
+      }
+
+      const input: CreateRoomInput = {
+        hubSlug,
+        hubId,
+        creatorId: user.id,
+        theme,
+        focusCycle,
+        isPrivate,
+      }
+
+      try {
+        const room = await adapter.createRoom(input)
+        await refresh()
+        return { ok: true, room }
+      } catch (e) {
+        if (e instanceof HubRoomError) {
+          return { ok: false, message: e.message, code: e.code }
+        }
+        return {
+          ok: false,
+          message: e instanceof Error ? e.message : 'Erro ao criar sala',
+        }
+      }
     },
-    [hubSlug, adapter, refresh],
+    [hubSlug, user?.id, getHubId, adapter, refresh],
   )
 
-  return { rooms, isLoading, error, createRoom, refresh }
+  return { rooms: roomsWithPresence, isLoading, error, createRoom, refresh }
 }

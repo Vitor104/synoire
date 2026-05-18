@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getHubRoomsAdapter, type StudyRoom } from '@/lib/hubRooms'
+import { filterVisibleRooms } from '@/lib/hubRooms/utils'
+import { useRoomPresence } from '@/hooks/useRoomPresence'
 
 export function useStudyRoom(roomId: string | undefined) {
   const [room, setRoom] = useState<StudyRoom | null>(null)
   const [loading, setLoading] = useState(true)
+  const { presentCount, emptySince } = useRoomPresence(roomId)
 
   useEffect(() => {
     if (!roomId) {
@@ -35,21 +38,16 @@ export function useStudyRoom(roomId: string | undefined) {
     }
   }, [roomId])
 
-  useEffect(() => {
-    if (!roomId) return
-    const adapter = getHubRoomsAdapter()
-    void adapter.incrementPresence(roomId)
-
-    const onUnload = () => {
-      void adapter.decrementPresence(roomId)
+  const roomWithPresence = useMemo(() => {
+    if (!room) return null
+    const merged: StudyRoom = {
+      ...room,
+      present_count: presentCount,
+      empty_since: emptySince,
     }
-    window.addEventListener('beforeunload', onUnload)
+    if (filterVisibleRooms([merged]).length === 0) return null
+    return merged
+  }, [room, presentCount, emptySince])
 
-    return () => {
-      window.removeEventListener('beforeunload', onUnload)
-      void adapter.decrementPresence(roomId)
-    }
-  }, [roomId])
-
-  return { room, loading }
+  return { room: roomWithPresence, loading }
 }

@@ -9,21 +9,44 @@ export type RoomTimerPayload = {
   break_sec: number
 }
 
+/** JSONB column `current_timer_state` on `rooms`. */
+export type PersistedTimerState = RoomTimerPayload & {
+  focus_cycle: FocusCycle
+}
+
+/** Row from Supabase `rooms` table. */
+export type RoomRow = {
+  id: string
+  hub_id: string
+  name: string
+  is_private: boolean
+  creator_id: string
+  current_timer_state: PersistedTimerState
+  created_at: string
+}
+
+/** UI model — ephemeral presence fields are merged in hooks. */
 export type StudyRoom = {
   id: string
   hub_slug: string
   name: string
-  theme: string
   focus_cycle: FocusCycle
   is_private: boolean
+  creator_id: string
   current_timer_state: RoomTimerPayload
   present_count: number
   empty_since: string | null
   created_at: string
 }
 
+export type RoomsResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; message: string; code?: 'forbidden' }
+
 export type CreateRoomInput = {
   hubSlug: string
+  hubId: string
+  creatorId: string
   theme: string
   focusCycle: FocusCycle
   isPrivate?: boolean
@@ -37,10 +60,12 @@ export type HubRoomsAdapter = {
   advanceTimerPhase(roomId: string): Promise<StudyRoom | null>
   incrementPresence(roomId: string): Promise<void>
   decrementPresence(roomId: string): Promise<void>
-  subscribe(onChange: () => void): () => void
+  subscribe(onChange: () => void, hubSlug?: string): () => void
 }
 
 export const THEME_MAX_LENGTH = 25
 export const ROOM_EMPTY_TTL_HOURS = 24
 /** Fixed prep window before the first focus segment (any cycle). */
 export const ROOM_PREP_SECONDS = 60
+
+export const EMPTY_SINCE_STORAGE_KEY = 'synoire-room-empty-since'

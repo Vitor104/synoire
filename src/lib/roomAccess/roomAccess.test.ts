@@ -1,32 +1,94 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   clearRoomAccessForTests,
-  grantRoomAccess,
-  hasRoomAccess,
+  grantRoomAccess as grantLocal,
+  hasRoomAccess as hasLocal,
   listGrantsForRoom,
 } from './storage'
+import { grantRoomAccess as grantClient, listRoomAccess } from './client'
 
-beforeEach(() => {
-  clearRoomAccessForTests()
-})
+const singleMock = vi.fn()
+const selectMock = vi.fn()
+const insertMock = vi.fn()
+const eqMock = vi.fn()
+const fromMock = vi.fn()
 
-describe('room access grants', () => {
-  it('grants access once per room and user', () => {
-    const first = grantRoomAccess('room-1', 'user-vitor')
-    const second = grantRoomAccess('room-1', 'user-vitor')
+vi.mock('@/lib/supabase', () => ({
+  isSupabaseConfigured: true,
+  getSupabase: () => ({
+    from: fromMock,
+  }),
+}))
 
-    expect(first.grantedAt).toBe(second.grantedAt)
-    expect(listGrantsForRoom('room-1')).toHaveLength(1)
-    expect(hasRoomAccess('room-1', 'user-vitor')).toBe(true)
-    expect(hasRoomAccess('room-1', 'user-carla')).toBe(false)
+vi.mock('@/lib/hubRooms/demo', () => ({
+  isDemoMode: false,
+}))
+
+describe('roomAccess storage (demo)', () => {
+  beforeEach(() => {
+    clearRoomAccessForTests()
   })
 
-  it('lists grants per room', () => {
-    grantRoomAccess('room-a', 'user-vitor')
-    grantRoomAccess('room-a', 'user-carla')
-    grantRoomAccess('room-b', 'user-vitor')
+  it('dedupes grants', () => {
+    const first = grantLocal('room-1', 'user-vitor')
+    const second = grantLocal('room-1', 'user-vitor')
+    expect(first.userId).toBe(second.userId)
+    expect(listGrantsForRoom('room-1')).toHaveLength(1)
+    expect(hasLocal('room-1', 'user-vitor')).toBe(true)
+    expect(hasLocal('room-1', 'user-carla')).toBe(false)
+  })
+})
 
-    expect(listGrantsForRoom('room-a')).toHaveLength(2)
-    expect(listGrantsForRoom('room-b')).toHaveLength(1)
+describe('roomAccess client (supabase)', () => {
+  beforeEach(() => {
+    fromMock.mockReset()
+    insertMock.mockReset()
+    selectMock.mockReset()
+    eqMock.mockReset()
+    singleMock.mockReset()
+  })
+
+  it('grants access via supabase', async () => {
+    fromMock.mockReturnValue({ insert: insertMock })
+    insertMock.mockReturnValue({ select: selectMock })
+    selectMock.mockReturnValue({ single: singleMock })
+    singleMock.mockResolvedValue({
+      data: {
+        room_id: 'room-1',
+        user_id: 'user-vitor',
+        created_at: '2026-05-16T12:00:00.000Z',
+        profiles: { username: 'vitor', avatar_url: null },
+      },
+      error: null,
+    })
+
+    const result = await grantClient('room-1', 'user-vitor')
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data.userId).toBe('user-vitor')
+      expect(result.data.username).toBe('vitor')
+    }
+  })
+
+  it('lists access rows', async () => {
+    fromMock.mockReturnValue({ select: selectMock })
+    selectMock.mockReturnValue({ eq: eqMock })
+    eqMock.mockResolvedValue({
+      data: [
+        {
+          room_id: 'room-a',
+          user_id: 'user-vitor',
+          created_at: '2026-05-16T12:00:00.000Z',
+          profiles: { username: 'vitor', avatar_url: null },
+        },
+      ],
+      error: null,
+    })
+
+    const result = await listRoomAccess('room-a')
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data).toHaveLength(1)
+    }
   })
 })

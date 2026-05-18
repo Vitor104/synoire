@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CreateRoomModal } from '@/components/hub/CreateRoomModal'
 import { HubRoomList } from '@/components/hub/HubRoomList'
+import { useUserPlan } from '@/contexts/UserPlanContext'
 import { useHubRooms } from '@/hooks/useHubRooms'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { getHubBySlug } from '@/lib/hubs'
@@ -20,9 +21,11 @@ export function HubDetailPage() {
   const c = pageStaggerContainer(reduced)
   const item = pageStaggerItem(reduced)
 
+  const { openPaywall } = useUserPlan()
   const { rooms, isLoading, error, createRoom } = useHubRooms(slug)
   const [createOpen, setCreateOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!slug) {
@@ -85,9 +88,19 @@ export function HubDetailPage() {
     isPrivate: boolean,
   ) => {
     setIsSubmitting(true)
+    setCreateError(null)
     try {
-      const room = await createRoom(theme, focusCycle, isPrivate)
-      navigate(`/salas/${room.id}`, { state: { sessionStart: 'lounge' } })
+      const result = await createRoom(theme, focusCycle, isPrivate)
+      if (!result.ok) {
+        if (result.code === 'forbidden') {
+          openPaywall()
+          setCreateOpen(false)
+          return
+        }
+        setCreateError(result.message)
+        return
+      }
+      navigate(`/salas/${result.room.id}`, { state: { sessionStart: 'lounge' } })
     } finally {
       setIsSubmitting(false)
     }
@@ -138,9 +151,18 @@ export function HubDetailPage() {
         prefersReducedMotion={reduced}
       />
 
+      {createError && (
+        <motion.p variants={item} className="mt-4 text-sm text-red-400" role="alert">
+          {createError}
+        </motion.p>
+      )}
+
       <CreateRoomModal
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false)
+          setCreateError(null)
+        }}
         onCreate={handleCreate}
         prefersReducedMotion={reduced}
         isSubmitting={isSubmitting}

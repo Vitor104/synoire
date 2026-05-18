@@ -16,9 +16,9 @@ function baseRoom(overrides: Partial<StudyRoom> = {}): StudyRoom {
     id: 'room-1',
     hub_slug: 'trt',
     name: 'Direito • 25/5',
-    theme: 'Direito',
     focus_cycle: '25/5',
     is_private: false,
+    creator_id: 'user-1',
     current_timer_state: {
       status: 'idle',
       started_at: null,
