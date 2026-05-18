@@ -4,16 +4,18 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import { ImmersiveCanvas } from '@/components/room/ImmersiveCanvas'
 import { PreRoomLounge } from '@/components/room/PreRoomLounge'
 import { RoomChat, RoomChatToggleButton } from '@/components/room/RoomChat'
+import { RoomMediaEmbed } from '@/components/room/RoomMediaEmbed'
 import { SessionOnboarding } from '@/components/room/SessionOnboarding'
+import { ThemeSelectorModal } from '@/components/room/ThemeSelectorModal'
 import { SAMPLE_HUBS } from '@/data/sampleHubs'
-import { LockIcon } from '@/components/premium/LockIcon'
 import { useUserPlan } from '@/contexts/UserPlanContext'
-import { DEFAULT_SOUNDSCAPES } from '@/data/defaultSoundscapes'
 import { useGlobalRoomTimer } from '@/hooks/useGlobalRoomTimer'
+import { useImmersiveTheme } from '@/hooks/useImmersiveTheme'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useStudyRoom } from '@/hooks/useStudyRoom'
 import { useRoomChat } from '@/hooks/useRoomChat'
 import { useRoomSoundscape } from '@/hooks/useRoomSoundscape'
+import { getImmersiveTheme, type ImmersiveThemeId } from '@/lib/immersiveThemes'
 import { canSendRoomChat } from '@/lib/roomChat'
 import { formatTimerSeconds, type RoomPhase } from '@/lib/roomTimer'
 import {
@@ -59,7 +61,8 @@ export function RoomPage() {
     [roomId, studyRoom?.name],
   )
   const prefersReducedMotion = usePrefersReducedMotion()
-  const { hasGlowAccess, openPaywall } = useUserPlan()
+  const { hasGlowAccess } = useUserPlan()
+  const { selectedThemeId, effectiveThemeId, setTheme } = useImmersiveTheme()
   const staggerC = pageStaggerContainer(prefersReducedMotion)
   const staggerItem = pageStaggerItem(prefersReducedMotion)
 
@@ -74,8 +77,9 @@ export function RoomPage() {
   const [timerRitualFade, setTimerRitualFade] = useState(false)
 
   const [chromeLit, setChromeLit] = useState(false)
-  const [soundOpen, setSoundOpen] = useState(false)
+  const [themeModalOpen, setThemeModalOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  const ambientRestoredRef = useRef(false)
   const idleTimerRef = useRef<number | null>(null)
   const prevPhaseRef = useRef(phase)
   const loungePromotedRef = useRef(false)
@@ -83,7 +87,39 @@ export function RoomPage() {
   const loungeEnteredPhaseRef = useRef<RoomPhase | 'prep' | null>(null)
 
   const sound = useRoomSoundscape()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleSelectTheme = useCallback(
+    (id: ImmersiveThemeId) => {
+      if (!setTheme(id)) return
+      const theme = getImmersiveTheme(id)
+      if (theme) {
+        void sound.playLibraryTrack(theme.audioFile, theme.audioLabel)
+      }
+    },
+    [setTheme, sound],
+  )
+
+  useEffect(() => {
+    if (ambientRestoredRef.current) return
+    ambientRestoredRef.current = true
+
+    async function restoreAmbient() {
+      if (hasGlowAccess) {
+        const customUrl = sound.readStoredCustomMediaUrl()
+        if (customUrl) {
+          const result = await sound.restoreCustomMediaUrl(customUrl)
+          if (result.ok) return
+        }
+      }
+
+      const theme = getImmersiveTheme(effectiveThemeId)
+      if (theme) {
+        await sound.playLibraryTrack(theme.audioFile, theme.audioLabel)
+      }
+    }
+
+    void restoreAmbient()
+  }, [effectiveThemeId, hasGlowAccess, sound])
 
   const entranceMs = useMemo(() => {
     if (prefersReducedMotion) return 420
@@ -104,7 +140,7 @@ export function RoomPage() {
 
   const toggleChat = useCallback(() => {
     setChatOpen((open) => {
-      if (!open) setSoundOpen(false)
+      if (!open) setThemeModalOpen(false)
       return !open
     })
   }, [])
@@ -247,6 +283,7 @@ export function RoomPage() {
       >
         <ImmersiveCanvas
           presentCount={presentCount}
+          theme={effectiveThemeId}
           motionSpeed={canvasMotionSpeed}
           pulseSpeed={canvasPulseSpeed}
           syncFlashUntil={syncFlashUntil}
@@ -345,11 +382,14 @@ export function RoomPage() {
             />
             <button
               type="button"
-              onClick={() => setSoundOpen((o) => !o)}
+              onClick={() => {
+                setThemeModalOpen(true)
+                setChatOpen(false)
+              }}
               className="rounded-lg px-3 py-2 text-sm text-secondary hover:bg-elevated hover:text-primary"
-              aria-expanded={soundOpen}
+              aria-expanded={themeModalOpen}
             >
-              Som
+              Ambiente
             </button>
           </motion.div>
         </motion.div>
@@ -380,111 +420,19 @@ export function RoomPage() {
         />
       )}
 
-      {showChrome && soundOpen && !chatOpen && (
-        <div
-          className="pointer-events-auto fixed right-4 top-14 z-30 w-[min(100%-2rem,20rem)] rounded-2xl border border-border bg-surface p-4 shadow-lg sm:right-6"
-          role="dialog"
-          aria-label="Configurar som ambiente"
-        >
-          <motion.div
-            className="flex items-center justify-between gap-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <p className="text-sm font-medium text-primary">Ambiente</p>
-            <button
-              type="button"
-              className="text-xs text-aqua hover:underline"
-              onClick={() => sound.togglePause()}
-              disabled={!sound.activeLabel}
-            >
-              {sound.isPlaying ? 'Pausar áudio' : 'Retomar'}
-            </button>
-          </motion.div>
+      <ThemeSelectorModal
+        open={themeModalOpen}
+        onClose={() => setThemeModalOpen(false)}
+        selectedThemeId={selectedThemeId}
+        onSelectTheme={handleSelectTheme}
+        sound={sound}
+        prefersReducedMotion={prefersReducedMotion}
+      />
 
-          <label className="mt-4 block text-xs text-secondary">
-            Volume
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.02}
-              value={sound.userVolume}
-              onChange={(e) =>
-                sound.setUserVolume(Number.parseFloat(e.target.value))
-              }
-              className="mt-1 block w-full accent-firefly"
-            />
-          </label>
-
-          <p className="mt-4 text-xs font-medium uppercase tracking-wide text-secondary">
-            Synoire default
-          </p>
-          <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-sm">
-            {DEFAULT_SOUNDSCAPES.map((t) => {
-              const locked = t.isPremium && !hasGlowAccess
-              return (
-                <li key={t.id}>
-                  <button
-                    type="button"
-                    className={`flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left hover:bg-elevated ${
-                      locked ? 'text-secondary/70' : 'text-primary'
-                    }`}
-                    onClick={() => {
-                      if (locked) {
-                        openPaywall()
-                        return
-                      }
-                      void sound.playLibraryTrack(t.file, t.label)
-                    }}
-                  >
-                    <span>{t.label}</span>
-                    {locked && <LockIcon className="h-4 w-4 shrink-0 text-firefly/70" />}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-
-          <p className="mt-4 text-xs text-secondary">
-            MP3 local (não enviado ao servidor)
-          </p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="audio/mpeg,audio/mp3,.mp3"
-            className="sr-only"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) void sound.setCustomFile(f)
-              e.target.value = ''
-            }}
-          />
-          <button
-            type="button"
-            className="mt-2 w-full rounded-xl border border-dashed border-border py-6 text-sm text-secondary hover:border-aqua/50 hover:bg-elevated"
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => {
-              e.preventDefault()
-              e.dataTransfer.dropEffect = 'copy'
-            }}
-            onDrop={(e) => {
-              e.preventDefault()
-              const f = e.dataTransfer.files?.[0]
-              if (f?.type === 'audio/mpeg' || f.name.toLowerCase().endsWith('.mp3')) {
-                void sound.setCustomFile(f)
-              }
-            }}
-          >
-            Arrastar MP3 ou clicar para escolher
-          </button>
-          {sound.activeLabel && (
-            <p className="mt-2 truncate text-xs text-aqua" title={sound.activeLabel}>
-              A tocar: {sound.activeLabel}
-            </p>
-          )}
-        </div>
-      )}
+      <RoomMediaEmbed
+        embed={sound.externalEmbed}
+        isPlaying={sound.isPlaying && sound.playbackMode === 'embed'}
+      />
     </motion.div>
   )
 }

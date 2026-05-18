@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { parseMediaUrl, type ParsedMediaUrl } from '@/lib/roomMedia/parseMediaUrl'
+import {
+  readCustomMediaUrl,
+  writeCustomMediaUrl,
+} from '@/lib/roomMedia/storage'
 
 const VOLUME_KEY = 'synoire-room-sound-volume'
 const FOCUS_CHIME_SRC = '/soundscapes/focus-chime.mp3'
 const CHIME_VOLUME = 0.25
+
+export type RoomPlaybackMode = 'library' | 'custom-file' | 'embed' | 'idle'
+
+export type ExternalEmbed = ParsedMediaUrl
 
 function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n))
@@ -47,7 +56,23 @@ export function useRoomSoundscape() {
   userVolRef.current = userVolume
   const [activeLabel, setActiveLabel] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [externalEmbed, setExternalEmbedState] = useState<ExternalEmbed | null>(
+    null,
+  )
+  const [playbackMode, setPlaybackMode] = useState<RoomPlaybackMode>('idle')
   const busyRef = useRef(false)
+
+  const clearCustomBlob = useCallback(() => {
+    if (customUrlRef.current) {
+      URL.revokeObjectURL(customUrlRef.current)
+      customUrlRef.current = null
+    }
+  }, [])
+
+  const clearExternalEmbed = useCallback(() => {
+    setExternalEmbedState(null)
+    writeCustomMediaUrl(null)
+  }, [])
 
   const ensureAudio = useCallback(() => {
     if (!audioRef.current) {
@@ -68,8 +93,10 @@ export function useRoomSoundscape() {
       /* ignore */
     }
     const a = audioRef.current
-    if (a && !busyRef.current) a.volume = userVolume
-  }, [userVolume])
+    if (a && !busyRef.current && playbackMode !== 'embed') {
+      a.volume = userVolume
+    }
+  }, [userVolume, playbackMode])
 
   const stopInternal = useCallback(async () => {
     const a = audioRef.current
@@ -86,6 +113,7 @@ export function useRoomSoundscape() {
 
   const playSource = useCallback(
     async (src: string, label: string) => {
+      clearExternalEmbed()
       const a = ensureAudio()
       busyRef.current = true
       if (a.src && !a.paused) {
@@ -98,49 +126,113 @@ export function useRoomSoundscape() {
         await a.play()
         setActiveLabel(label)
         lastAmbientRef.current = { src, label }
+        setPlaybackMode('library')
         await fadeVolume(a, 0, userVolRef.current, 380)
       } catch {
         setActiveLabel(null)
         lastAmbientRef.current = null
+        setPlaybackMode('idle')
       }
       busyRef.current = false
     },
-    [ensureAudio],
+    [clearExternalEmbed, ensureAudio],
   )
 
   const setCustomFile = useCallback(
     async (file: File | null) => {
-      if (customUrlRef.current) {
-        URL.revokeObjectURL(customUrlRef.current)
-        customUrlRef.current = null
-      }
+      clearExternalEmbed()
+      clearCustomBlob()
       if (!file) {
         await stopInternal()
         setActiveLabel(null)
         lastAmbientRef.current = null
+        setPlaybackMode('idle')
         return
       }
       const url = URL.createObjectURL(file)
       customUrlRef.current = url
-      await playSource(url, file.name.replace(/\.[^/.]+$/, ''))
+      const a = ensureAudio()
+      busyRef.current = true
+      if (a.src && !a.paused) {
+        await fadeVolume(a, a.volume, 0, 240)
+        a.pause()
+      }
+      a.src = url
+      a.volume = 0
+      try {
+        await a.play()
+        const label = file.name.replace(/\.[^/.]+$/, '')
+        setActiveLabel(label)
+        lastAmbientRef.current = { src: url, label }
+        setPlaybackMode('custom-file')
+        await fadeVolume(a, 0, userVolRef.current, 380)
+      } catch {
+        setActiveLabel(null)
+        lastAmbientRef.current = null
+        setPlaybackMode('idle')
+      }
+      busyRef.current = false
     },
-    [playSource, stopInternal],
+    [clearCustomBlob, clearExternalEmbed, ensureAudio, stopInternal],
   )
 
   const playLibraryTrack = useCallback(
     async (src: string, label: string) => {
-      await setCustomFile(null)
+      clearCustomBlob()
       await playSource(src, label)
     },
-    [playSource, setCustomFile],
+    [clearCustomBlob, playSource],
+  )
+
+  const setExternalEmbed = useCallback(
+    async (rawUrl: string | null) => {
+      clearCustomBlob()
+      await stopInternal()
+
+      if (!rawUrl?.trim()) {
+        clearExternalEmbed()
+        setActiveLabel(null)
+        lastAmbientRef.current = null
+        setPlaybackMode('idle')
+        return { ok: false as const, error: 'Informe um link válido.' }
+      }
+
+      const parsed = parseMediaUrl(rawUrl)
+      if (!parsed) {
+        return {
+          ok: false as const,
+          error: 'Link não reconhecido. Use YouTube ou Spotify.',
+        }
+      }
+
+      setExternalEmbedState(parsed)
+      writeCustomMediaUrl(rawUrl.trim())
+      setActiveLabel(parsed.label)
+      lastAmbientRef.current = null
+      setPlaybackMode('embed')
+      setIsPlaying(true)
+      return { ok: true as const }
+    },
+    [clearCustomBlob, clearExternalEmbed, stopInternal],
+  )
+
+  const restoreCustomMediaUrl = useCallback(
+    async (rawUrl: string) => {
+      return setExternalEmbed(rawUrl)
+    },
+    [setExternalEmbed],
   )
 
   const togglePause = useCallback(() => {
+    if (playbackMode === 'embed') {
+      setIsPlaying((p) => !p)
+      return
+    }
     const a = audioRef.current
     if (!a?.src) return
     if (a.paused) void a.play()
     else a.pause()
-  }, [])
+  }, [playbackMode])
 
   const playFocusChime = useCallback(async () => {
     if (!chimeRef.current) {
@@ -158,6 +250,8 @@ export function useRoomSoundscape() {
       /* autoplay blocked or missing asset */
     }
 
+    if (playbackMode === 'embed') return
+
     const ambient = lastAmbientRef.current
     const a = audioRef.current
     if (ambient && a?.src) {
@@ -173,27 +267,29 @@ export function useRoomSoundscape() {
         await fadeVolume(a, a.volume, userVolRef.current, 380)
       }
     }
-  }, [])
+  }, [playbackMode])
 
   useEffect(() => {
     return () => {
       void stopInternal()
-      if (customUrlRef.current) {
-        URL.revokeObjectURL(customUrlRef.current)
-        customUrlRef.current = null
-      }
+      clearCustomBlob()
       chimeRef.current = null
       audioRef.current = null
     }
-  }, [stopInternal])
+  }, [clearCustomBlob, stopInternal])
 
   return {
     userVolume,
     setUserVolume,
     activeLabel,
     isPlaying,
+    playbackMode,
+    externalEmbed,
     playLibraryTrack,
     setCustomFile,
+    setExternalEmbed,
+    restoreCustomMediaUrl,
+    readStoredCustomMediaUrl: readCustomMediaUrl,
     togglePause,
     playFocusChime,
     stop: stopInternal,
