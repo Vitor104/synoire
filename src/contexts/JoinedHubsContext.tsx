@@ -2,75 +2,129 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useHubs } from '@/contexts/HubsContext'
 import { useUserPlan } from '@/contexts/UserPlanContext'
+import { FREE_JOINED_HUB_LIMIT } from '@/lib/joinedHubs'
 import {
-  FREE_JOINED_HUB_LIMIT,
-  isHubJoined,
-  readJoinedHubSlugs,
-  writeJoinedHubSlugs,
-} from '@/lib/joinedHubs'
+  joinUserHub,
+  leaveUserHub,
+  listUserHubs,
+  type HubView,
+} from '@/lib/hubs'
 
 const HUB_LIMIT_PAYWALL_MESSAGE =
   'Glow users podem focar em concursos ilimitados.'
 
 type JoinedHubsContextValue = {
+  joinedHubs: HubView[]
   joinedSlugs: string[]
+  isLoading: boolean
   isJoined: (slug: string) => boolean
-  joinHub: (slug: string) => boolean
-  leaveHub: (slug: string) => void
+  joinHub: (slug: string) => Promise<boolean>
+  leaveHub: (slug: string) => Promise<void>
+  refreshJoined: () => Promise<void>
 }
 
 const JoinedHubsContext = createContext<JoinedHubsContextValue | null>(null)
 
 export function JoinedHubsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const { getHubId } = useHubs()
   const { hasGlowAccess, openPaywall } = useUserPlan()
-  const [joinedSlugs, setJoinedSlugs] = useState(() => readJoinedHubSlugs())
+  const [joinedHubs, setJoinedHubs] = useState<HubView[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const persist = useCallback((next: string[]) => {
-    setJoinedSlugs(next)
-    writeJoinedHubSlugs(next)
-  }, [])
+  const joinedSlugs = useMemo(
+    () => joinedHubs.map((h) => h.slug),
+    [joinedHubs],
+  )
+
+  const refreshJoined = useCallback(async () => {
+    if (!user?.id) {
+      setJoinedHubs([])
+      setIsLoading(false)
+      return
+    }
+    setIsLoading(true)
+    const result = await listUserHubs(user.id)
+    if (result.ok) {
+      setJoinedHubs(result.data)
+    } else {
+      setJoinedHubs([])
+    }
+    setIsLoading(false)
+  }, [user?.id])
+
+  useEffect(() => {
+    void refreshJoined()
+  }, [refreshJoined])
 
   const isJoined = useCallback(
-    (slug: string) => isHubJoined(slug, joinedSlugs),
+    (slug: string) => joinedSlugs.includes(slug),
     [joinedSlugs],
   )
 
   const joinHub = useCallback(
-    (slug: string): boolean => {
-      if (isHubJoined(slug, joinedSlugs)) return true
+    async (slug: string): Promise<boolean> => {
+      if (!user?.id) return false
+      if (joinedSlugs.includes(slug)) return true
 
       if (!hasGlowAccess && joinedSlugs.length >= FREE_JOINED_HUB_LIMIT) {
         openPaywall(HUB_LIMIT_PAYWALL_MESSAGE)
         return false
       }
 
-      persist([...joinedSlugs, slug])
+      const hubId = getHubId(slug)
+      if (!hubId) return false
+
+      const result = await joinUserHub(user.id, hubId, slug)
+      if (!result.ok) return false
+
+      await refreshJoined()
       return true
     },
-    [joinedSlugs, hasGlowAccess, openPaywall, persist],
+    [
+      user?.id,
+      joinedSlugs,
+      hasGlowAccess,
+      openPaywall,
+      getHubId,
+      refreshJoined,
+    ],
   )
 
   const leaveHub = useCallback(
-    (slug: string) => {
-      if (!isHubJoined(slug, joinedSlugs)) return
-      persist(joinedSlugs.filter((s) => s !== slug))
+    async (slug: string) => {
+      if (!user?.id || !joinedSlugs.includes(slug)) return
+
+      const hubId = getHubId(slug) ?? joinedHubs.find((h) => h.slug === slug)?.id
+      if (!hubId) return
+
+      const result = await leaveUserHub(user.id, hubId, slug)
+      if (!result.ok) return
+
+      await refreshJoined()
     },
-    [joinedSlugs, persist],
+    [user?.id, joinedSlugs, getHubId, joinedHubs, refreshJoined],
   )
 
   const value = useMemo(
     () => ({
+      joinedHubs,
       joinedSlugs,
+      isLoading,
       isJoined,
       joinHub,
       leaveHub,
+      refreshJoined,
     }),
-    [joinedSlugs, isJoined, joinHub, leaveHub],
+    [joinedHubs, joinedSlugs, isLoading, isJoined, joinHub, leaveHub, refreshJoined],
   )
 
   return (

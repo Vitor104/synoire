@@ -6,8 +6,30 @@ vi.mock('@/lib/supabase', () => ({
   isSupabaseConfigured: false,
   getSupabase: () => null,
 }))
+
+vi.mock('@/lib/hubs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/hubs')>()
+  const { SAMPLE_HUBS } = await import('@/data/sampleHubs')
+  return {
+    ...actual,
+    listHubs: vi.fn(async () => ({ ok: true as const, data: SAMPLE_HUBS })),
+    getHubBySlug: vi.fn(async (slug: string) => ({
+      ok: true as const,
+      data: SAMPLE_HUBS.find((h) => h.slug === slug) ?? null,
+    })),
+    listUserHubs: vi.fn(async () => ({ ok: true as const, data: [] })),
+    joinUserHub: vi.fn(async () => ({ ok: true as const, data: undefined })),
+    leaveUserHub: vi.fn(async () => ({ ok: true as const, data: undefined })),
+    createPrivateHub: vi.fn(async () => ({
+      ok: true as const,
+      data: SAMPLE_HUBS[0],
+    })),
+  }
+})
+
 import { AppRoutes } from './App'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { HubsProvider } from '@/contexts/HubsContext'
 import { JoinedHubsProvider } from '@/contexts/JoinedHubsContext'
 import { StudyPartnersProvider } from '@/contexts/StudyPartnersContext'
 import { UserPlanProvider } from '@/contexts/UserPlanContext'
@@ -17,11 +39,13 @@ function renderAt(path: string) {
     <AuthProvider>
       <UserPlanProvider>
         <StudyPartnersProvider>
-          <JoinedHubsProvider>
-            <MemoryRouter initialEntries={[path]}>
-              <AppRoutes />
-            </MemoryRouter>
-          </JoinedHubsProvider>
+          <HubsProvider>
+            <JoinedHubsProvider>
+              <MemoryRouter initialEntries={[path]}>
+                <AppRoutes />
+              </MemoryRouter>
+            </JoinedHubsProvider>
+          </HubsProvider>
         </StudyPartnersProvider>
       </UserPlanProvider>
     </AuthProvider>,
@@ -45,20 +69,20 @@ describe('rotas (smoke, sem backend)', () => {
     expect(screen.getByRole('navigation')).toBeInTheDocument()
   })
 
-  it('renderiza a lista de hubs', () => {
+  it('renderiza a lista de hubs', async () => {
     renderAt('/hubs')
     expect(
       screen.getByRole('heading', { name: /hubs por concurso/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /não encontrou seu concurso/i }),
+      await screen.findByRole('button', { name: /não encontrou seu concurso/i }),
     ).toBeInTheDocument()
   })
 
-  it('renderiza detalhe de hub por slug', () => {
+  it('renderiza detalhe de hub por slug', async () => {
     renderAt('/hubs/pf')
     expect(
-      screen.getByRole('heading', { name: /polícia federal/i }),
+      await screen.findByRole('heading', { name: /polícia federal/i }),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /criar sala/i })).toBeInTheDocument()
   })

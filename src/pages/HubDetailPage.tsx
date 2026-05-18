@@ -1,11 +1,12 @@
 import { motion } from 'motion/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CreateRoomModal } from '@/components/hub/CreateRoomModal'
 import { HubRoomList } from '@/components/hub/HubRoomList'
-import { getHubBySlug } from '@/data/sampleHubs'
 import { useHubRooms } from '@/hooks/useHubRooms'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { getHubBySlug } from '@/lib/hubs'
+import type { HubView } from '@/lib/hubs/types'
 import {
   pageStaggerContainer,
   pageStaggerItem,
@@ -14,7 +15,7 @@ import {
 export function HubDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const hub = getHubBySlug(slug)
+  const [hub, setHub] = useState<HubView | null | undefined>(undefined)
   const reduced = usePrefersReducedMotion()
   const c = pageStaggerContainer(reduced)
   const item = pageStaggerItem(reduced)
@@ -22,6 +23,41 @@ export function HubDetailPage() {
   const { rooms, isLoading, error, createRoom } = useHubRooms(slug)
   const [createOpen, setCreateOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!slug) {
+      setHub(null)
+      return
+    }
+    let cancelled = false
+    setHub(undefined)
+    void getHubBySlug(slug).then((result) => {
+      if (cancelled) return
+      if (result.ok) {
+        setHub(result.data)
+      } else {
+        setHub(null)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [slug])
+
+  if (hub === undefined) {
+    return (
+      <motion.div
+        className="mx-auto max-w-lg py-16 text-center"
+        variants={c}
+        initial={reduced ? false : 'hidden'}
+        animate="visible"
+      >
+        <motion.p variants={item} className="text-secondary">
+          Carregando hub…
+        </motion.p>
+      </motion.div>
+    )
+  }
 
   if (!hub) {
     return (
@@ -74,14 +110,14 @@ export function HubDetailPage() {
         </Link>
       </motion.div>
       <motion.header variants={item} className="mt-6">
-        <div className="flex flex-wrap items-center gap-2">
+        <motion.div variants={item} className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold text-primary">{hub.name}</h1>
           {hub.isPrivate && (
             <span className="rounded-md border border-firefly/40 bg-firefly/10 px-2 py-0.5 text-xs font-semibold text-firefly">
               Hub Privado
             </span>
           )}
-        </div>
+        </motion.div>
         <p className="mt-2 text-sm text-secondary">
           Salas de foco criadas por estudantes neste hub. Salas vazias por mais
           de 24 horas somem da lista.

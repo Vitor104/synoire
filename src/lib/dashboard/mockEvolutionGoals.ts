@@ -1,4 +1,4 @@
-import { getHubBySlug } from '@/data/sampleHubs'
+import { SAMPLE_HUBS } from '@/data/sampleHubs'
 
 export type EvolutionGoal = {
   hub_id: string
@@ -21,7 +21,7 @@ export const MOCK_EVOLUTION_GOALS: EvolutionGoal[] = [
 const goalByHubId = new Map(MOCK_EVOLUTION_GOALS.map((g) => [g.hub_id, g]))
 
 function resolveHubName(hubId: string): string {
-  return getHubBySlug(hubId)?.name ?? hubId
+  return SAMPLE_HUBS.find((h) => h.slug === hubId)?.name ?? hubId
 }
 
 function toGoalWithHub(goal: EvolutionGoal): EvolutionGoalWithHub {

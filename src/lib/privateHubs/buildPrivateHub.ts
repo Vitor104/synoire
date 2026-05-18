@@ -1,4 +1,4 @@
-import type { HubSummary } from '@/data/sampleHubs'
+import type { HubView } from '@/lib/hubs/types'
 
 function slugifyName(name: string): string {
   return name
@@ -14,7 +14,7 @@ export function buildPrivateHub(
   name: string,
   iconEmoji?: string,
   existingSlugs: string[] = [],
-): HubSummary {
+): HubView {
   const base = slugifyName(name)
   let slug = `privado-${base}`
   let suffix = 0
@@ -24,6 +24,7 @@ export function buildPrivateHub(
   }
 
   return {
+    id: `demo-private-${slug}`,
     slug,
     name: name.trim(),
     shortLabel: 'Privado',

@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { LockIcon } from '@/components/premium/LockIcon'
-import type { HubSummary } from '@/data/sampleHubs'
+import type { HubView } from '@/lib/hubs/types'
 
 type HubListCardProps = {
-  hub: HubSummary
+  hub: HubView
   isJoined: boolean
   onJoin: () => void
   onLeave: () => void
