@@ -2,21 +2,24 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { AppRoutes } from './App'
+import { AuthProvider } from '@/contexts/AuthContext'
 import { JoinedHubsProvider } from '@/contexts/JoinedHubsContext'
 import { StudyPartnersProvider } from '@/contexts/StudyPartnersContext'
 import { UserPlanProvider } from '@/contexts/UserPlanContext'
 
 function renderAt(path: string) {
   return render(
-    <UserPlanProvider>
-      <StudyPartnersProvider>
-        <JoinedHubsProvider>
-          <MemoryRouter initialEntries={[path]}>
-            <AppRoutes />
-          </MemoryRouter>
-        </JoinedHubsProvider>
-      </StudyPartnersProvider>
-    </UserPlanProvider>,
+    <AuthProvider>
+      <UserPlanProvider>
+        <StudyPartnersProvider>
+          <JoinedHubsProvider>
+            <MemoryRouter initialEntries={[path]}>
+              <AppRoutes />
+            </MemoryRouter>
+          </JoinedHubsProvider>
+        </StudyPartnersProvider>
+      </UserPlanProvider>
+    </AuthProvider>,
   )
 }
 
@@ -81,8 +84,11 @@ describe('rotas (smoke, sem backend)', () => {
     expect(screen.getByRole('heading', { name: /^perfil$/i })).toBeInTheDocument()
   })
 
-  it('renderiza página de entrar', () => {
+  it('renderiza página de entrar com formulário', () => {
     renderAt('/entrar')
     expect(screen.getByRole('heading', { name: /^entrar$/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /^entrar$/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /criar conta/i })).toBeInTheDocument()
+    expect(screen.getByLabelText(/^e-mail$/i)).toBeInTheDocument()
   })
 })

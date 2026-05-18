@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { readDevPlanTier, writeDevPlanTier } from '@/lib/plan/devStorage'
 import { hasGlowAccess, isPlanTier, type PlanTier } from '@/lib/plan/types'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
@@ -25,6 +26,7 @@ type UserPlanContextValue = {
 const UserPlanContext = createContext<UserPlanContextValue | null>(null)
 
 export function UserPlanProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
   const [planTier, setPlanTierState] = useState<PlanTier>(() => readDevPlanTier() ?? 'free')
   const [isLoading, setIsLoading] = useState(true)
   const [paywallOpen, setPaywallOpen] = useState(false)
@@ -78,7 +80,7 @@ export function UserPlanProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [user?.id])
 
   const setPlanTier = useCallback((tier: PlanTier) => {
     setPlanTierState(tier)

@@ -1,8 +1,10 @@
 import { useEffect, useId, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { StudyPartnersSidebar } from '@/components/dashboard/StudyPartnersSidebar'
 import { AppAtmosphere } from '@/components/layout/AppAtmosphere'
+import { useAuth } from '@/contexts/AuthContext'
 import { useStudyPartners } from '@/contexts/StudyPartnersContext'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -19,6 +21,30 @@ const NAV_LINKS_BEFORE_PARTNERS: readonly { to: string; label: string; end?: boo
 const NAV_LINKS_AFTER_PARTNERS: readonly { to: string; label: string; end?: boolean }[] = [
   { to: '/perfil', label: 'Perfil' },
 ]
+
+const signOutClass =
+  'block w-full rounded-lg px-3 py-2 text-left text-sm text-secondary hover:bg-elevated hover:text-primary'
+
+function ShellSignOut({ onNavigate }: { onNavigate?: () => void }) {
+  const { signOut, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+
+  if (!isSupabaseConfigured || !isAuthenticated) {
+    return null
+  }
+
+  const handleSignOut = async () => {
+    onNavigate?.()
+    await signOut()
+    navigate('/', { replace: true })
+  }
+
+  return (
+    <button type="button" className={signOutClass} onClick={() => void handleSignOut()}>
+      Sair
+    </button>
+  )
+}
 
 function ShellNavItems({
   partnersOpen,
@@ -231,13 +257,7 @@ export function AppShell() {
               />
             </nav>
             <div className="mt-4 border-t border-border pt-4">
-              <NavLink
-                to="/entrar"
-                className="block rounded-lg px-3 py-2 text-sm text-secondary hover:bg-elevated hover:text-primary"
-                onClick={() => setMenuOpen(false)}
-              >
-                Sair (stub)
-              </NavLink>
+              <ShellSignOut onNavigate={() => setMenuOpen(false)} />
             </div>
           </div>
         </>
@@ -264,12 +284,7 @@ export function AppShell() {
           />
         </nav>
         <div className="mt-auto border-t border-border pt-4">
-          <NavLink
-            to="/entrar"
-            className="block rounded-lg px-3 py-2 text-sm text-secondary hover:bg-elevated hover:text-primary"
-          >
-            Sair (stub)
-          </NavLink>
+          <ShellSignOut />
         </div>
       </aside>
 

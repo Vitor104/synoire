@@ -1,5 +1,14 @@
 import { motion } from 'motion/react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
+import {
+  MIN_PASSWORD_LENGTH,
+  signIn,
+  signUp,
+  validateSignInInput,
+  validateSignUpInput,
+} from '@/lib/auth'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import {
   pageStaggerContainer,
@@ -9,16 +18,103 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 const demoMode = import.meta.env.VITE_DEMO_MODE === 'true'
 
+type AuthMode = 'login' | 'signup'
+
+const inputClass =
+  'mt-2 w-full rounded-xl border border-white/10 bg-night/60 px-4 py-3 text-sm text-primary placeholder:text-secondary/60 focus:border-firefly/40 focus:outline-none focus:ring-1 focus:ring-firefly/30'
+
 export function AuthPage() {
   const navigate = useNavigate()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const supabaseReady = isSupabaseConfigured && getSupabase()
   const reduced = usePrefersReducedMotion()
   const c = pageStaggerContainer(reduced)
   const item = pageStaggerItem(reduced)
 
+  const [mode, setMode] = useState<AuthMode>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && supabaseReady) {
+      navigate('/painel', { replace: true })
+    }
+  }, [authLoading, isAuthenticated, supabaseReady, navigate])
+
   const goToPainel = () => {
     navigate('/painel')
   }
+
+  const switchMode = (next: AuthMode) => {
+    setMode(next)
+    setError(null)
+    setInfo(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setInfo(null)
+
+    if (!supabaseReady) {
+      setError('Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env.')
+      return
+    }
+
+    if (mode === 'login') {
+      const validationError = validateSignInInput({ email, password })
+      if (validationError) {
+        setError(validationError)
+        return
+      }
+      setIsSubmitting(true)
+      const result = await signIn({ email, password })
+      setIsSubmitting(false)
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
+      navigate('/painel')
+      return
+    }
+
+    const validationError = validateSignUpInput({ email, password, username })
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+    setIsSubmitting(true)
+    const result = await signUp({
+      email,
+      password,
+      username,
+      avatarUrl: avatarUrl.trim() || null,
+    })
+    setIsSubmitting(false)
+    if (!result.ok) {
+      setError(result.message)
+      return
+    }
+    if (result.needsEmailConfirmation) {
+      setInfo('Enviamos um link de confirmação para seu e-mail. Confirme antes de entrar.')
+      return
+    }
+    navigate('/painel')
+  }
+
+  const canSubmit =
+    supabaseReady &&
+    !isSubmitting &&
+    (mode === 'login'
+      ? email.trim().length > 0 && password.length > 0
+      : email.trim().length > 0 &&
+          password.length >= MIN_PASSWORD_LENGTH &&
+          username.trim().length >= 2)
 
   return (
     <motion.div
@@ -28,59 +124,176 @@ export function AuthPage() {
       animate="visible"
     >
       <motion.h1 variants={item} className="text-2xl font-semibold text-primary">
-        Entrar
+        {mode === 'login' ? 'Entrar' : 'Criar conta'}
       </motion.h1>
       <motion.p variants={item} className="mt-2 text-sm text-secondary">
         {demoMode
-          ? 'Modo demo: navegue pelo app sem Supabase (apenas front-end).'
-          : 'Fluxo de auth com Supabase será ligado aqui (e-mail / OAuth).'}
+          ? 'Modo demo disponível abaixo. Com Supabase configurado, use o formulário para auth real.'
+          : 'Acesse sua conta ou cadastre-se para estudar com a comunidade.'}
       </motion.p>
-      {demoMode && (
-        <motion.p
-          variants={item}
-          className="mt-6 rounded-lg border border-border bg-surface px-4 py-3 text-sm text-secondary"
+
+      <motion.div
+        variants={item}
+        className="mt-6 flex rounded-xl border border-border bg-surface p-1"
+        role="tablist"
+        aria-label="Tipo de acesso"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'login'}
+          onClick={() => switchMode('login')}
+          className={
+            mode === 'login'
+              ? 'flex-1 rounded-lg bg-elevated px-3 py-2 text-sm font-medium text-primary'
+              : 'flex-1 rounded-lg px-3 py-2 text-sm text-secondary hover:text-primary'
+          }
         >
-          Nenhuma conta é criada e nada é enviado à rede. Use os botões abaixo
-          para ir ao painel.
-        </motion.p>
-      )}
+          Entrar
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'signup'}
+          onClick={() => switchMode('signup')}
+          className={
+            mode === 'signup'
+              ? 'flex-1 rounded-lg bg-elevated px-3 py-2 text-sm font-medium text-primary'
+              : 'flex-1 rounded-lg px-3 py-2 text-sm text-secondary hover:text-primary'
+          }
+        >
+          Criar conta
+        </button>
+      </motion.div>
+
       {!demoMode && !supabaseReady && (
         <motion.p
           variants={item}
           className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
         >
           Defina <code className="text-amber-100">VITE_SUPABASE_URL</code> e{' '}
-          <code className="text-amber-100">VITE_SUPABASE_ANON_KEY</code> no
-          arquivo <code className="text-amber-100">.env</code> para habilitar o
-          cliente.
+          <code className="text-amber-100">VITE_SUPABASE_ANON_KEY</code> no arquivo{' '}
+          <code className="text-amber-100">.env</code> para habilitar o cliente.
         </motion.p>
       )}
-      <motion.div variants={item} className="mt-8 space-y-3">
+
+      <motion.form variants={item} className="mt-6 space-y-4" onSubmit={(e) => void handleSubmit(e)}>
+        <label className="block text-sm text-secondary">
+          E-mail
+          <input
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              setError(null)
+              setInfo(null)
+            }}
+            className={inputClass}
+            placeholder="voce@email.com"
+          />
+        </label>
+
+        <label className="block text-sm text-secondary">
+          Senha
+          <input
+            type="password"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            minLength={mode === 'signup' ? MIN_PASSWORD_LENGTH : undefined}
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              setError(null)
+              setInfo(null)
+            }}
+            className={inputClass}
+            placeholder={mode === 'signup' ? `Mín. ${MIN_PASSWORD_LENGTH} caracteres` : '••••••••'}
+          />
+        </label>
+
+        {mode === 'signup' && (
+          <>
+            <label className="block text-sm text-secondary">
+              Nome de usuário
+              <input
+                type="text"
+                autoComplete="username"
+                value={username}
+                maxLength={32}
+                onChange={(e) => {
+                  setUsername(e.target.value)
+                  setError(null)
+                }}
+                className={inputClass}
+                placeholder="concurseiro_ninja"
+              />
+            </label>
+            <label className="block text-sm text-secondary">
+              URL do avatar <span className="text-secondary/60">(opcional)</span>
+              <input
+                type="url"
+                value={avatarUrl}
+                onChange={(e) => {
+                  setAvatarUrl(e.target.value)
+                  setError(null)
+                }}
+                className={inputClass}
+                placeholder="https://…"
+              />
+            </label>
+          </>
+        )}
+
+        {error && (
+          <p className="text-sm text-amber-200" role="alert">
+            {error}
+          </p>
+        )}
+        {info && (
+          <p className="text-sm text-firefly" role="status">
+            {info}
+          </p>
+        )}
+
         <button
-          type="button"
-          disabled={!demoMode}
-          onClick={demoMode ? goToPainel : undefined}
-          className={
-            demoMode
-              ? 'w-full cursor-pointer rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-primary transition hover:bg-elevated'
-              : 'w-full cursor-not-allowed rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-secondary'
-          }
+          type="submit"
+          disabled={!canSubmit}
+          className="w-full rounded-xl bg-firefly px-4 py-3 text-sm font-medium text-night hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Continuar com e-mail (stub)
+          {isSubmitting
+            ? 'Aguarde…'
+            : mode === 'login'
+              ? 'Entrar'
+              : 'Criar conta'}
         </button>
+      </motion.form>
+
+      <motion.div variants={item} className="mt-4">
         <button
           type="button"
-          disabled={!demoMode}
-          onClick={demoMode ? goToPainel : undefined}
-          className={
-            demoMode
-              ? 'w-full cursor-pointer rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-primary transition hover:bg-elevated'
-              : 'w-full cursor-not-allowed rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-secondary'
-          }
+          disabled
+          className="w-full cursor-not-allowed rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-secondary opacity-60"
         >
-          Continuar com Google (stub)
+          Continuar com Google (em breve)
         </button>
       </motion.div>
+
+      {demoMode && (
+        <motion.div variants={item} className="mt-6 space-y-3 border-t border-border pt-6">
+          <p className="text-xs text-secondary">
+            Modo demo: nenhuma conta é criada. Rotas protegidas exigem login real quando o
+            Supabase estiver configurado.
+          </p>
+          <button
+            type="button"
+            onClick={goToPainel}
+            className="w-full cursor-pointer rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-primary transition hover:bg-elevated"
+          >
+            Ir ao painel sem conta (demo)
+          </button>
+        </motion.div>
+      )}
+
       <motion.div variants={item}>
         <Link
           to="/"

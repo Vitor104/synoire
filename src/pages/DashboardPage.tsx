@@ -24,7 +24,7 @@ function MetricColumn({
   variants: Variants
 }) {
   return (
-    <motion.div variants={variants} className="px-6 py-2 first:pl-0 last:pr-0">
+    <motion.div variants={variants} className="py-2 sm:px-6 sm:first:pl-0 sm:last:pr-0">
       <p className="text-xs font-medium uppercase tracking-widest text-firefly">{label}</p>
       <p className="mt-3 text-4xl font-semibold tabular-nums text-primary">{value}</p>
       <p className="mt-2 text-sm text-secondary">{hint}</p>
