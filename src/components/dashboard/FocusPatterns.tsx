@@ -8,16 +8,38 @@ import {
   YAxis,
 } from 'recharts'
 import { GlowLockedOverlay } from '@/components/premium/GlowLockedOverlay'
-import {
-  aggregateByTimeBlock,
-  generateMockSessions,
-} from '@/lib/dashboard/focusPatterns'
+import { useStudySessions } from '@/hooks/useStudySessions'
+import { aggregateByTimeBlock } from '@/lib/dashboard/focusPatterns'
+import { toSessionPoints } from '@/lib/dashboard/studyAnalytics'
 
 export function FocusPatterns() {
+  const { sessions, isLoading } = useStudySessions()
+
   const stats = useMemo(() => {
-    const sessions = generateMockSessions()
-    return aggregateByTimeBlock(sessions)
-  }, [])
+    const points = toSessionPoints(sessions)
+    if (points.length === 0) return null
+    return aggregateByTimeBlock(points)
+  }, [sessions])
+
+  if (isLoading) {
+    return (
+      <section className="rounded-2xl border border-white/5 bg-panel p-6">
+        <h2 className="text-sm font-medium text-primary">Inteligência de Foco</h2>
+        <p className="mt-4 text-sm text-secondary">Carregando padrões de foco…</p>
+      </section>
+    )
+  }
+
+  if (!stats) {
+    return (
+      <section className="rounded-2xl border border-white/5 bg-panel p-6">
+        <h2 className="text-sm font-medium text-primary">Inteligência de Foco</h2>
+        <p className="mt-4 text-sm text-secondary">
+          Estude em uma sala para ver seus horários ideais de foco.
+        </p>
+      </section>
+    )
+  }
 
   const { chartData, peakBlock, peakLabel, boostPercent } = stats
 

@@ -1,18 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
+import { CreateGoalModal } from '@/components/dashboard/CreateGoalModal'
 import { LockIcon } from '@/components/premium/LockIcon'
-import { AppToast } from '@/components/ui/AppToast'
-import { useJoinedHubs } from '@/contexts/JoinedHubsContext'
 import { useUserPlan } from '@/contexts/UserPlanContext'
-import {
-  goalsForJoinedHubs,
-  paywallTeaserGoals,
-  type EvolutionGoalWithHub,
-} from '@/lib/dashboard/mockEvolutionGoals'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { useUserGoals } from '@/hooks/useUserGoals'
+import { paywallTeaserGoals } from '@/lib/dashboard/paywallTeaserGoals'
+import type { CreateUserGoalInput, UserGoalView } from '@/lib/goals'
 
-const TOAST_MESSAGE = 'Funcionalidade em desenvolvimento'
-
-const EMPTY_GLOW_MESSAGE =
-  'Entre em hubs na página Hubs para ver suas metas semanais.'
+const EMPTY_GOALS_MESSAGE = 'Crie sua primeira meta com o botão acima.'
 
 function formatHours(hours: number): string {
   return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`
@@ -24,12 +19,13 @@ function goalProgress(current: number, target: number): number {
 }
 
 type TrailsContentProps = {
-  goals: EvolutionGoalWithHub[]
+  goals: UserGoalView[]
   onNewGoal: () => void
   emptyMessage?: string
+  isLoading?: boolean
 }
 
-function TrailsContent({ goals, onNewGoal, emptyMessage }: TrailsContentProps) {
+function TrailsContent({ goals, onNewGoal, emptyMessage, isLoading }: TrailsContentProps) {
   return (
     <>
       <div className="flex items-center justify-between gap-4">
@@ -42,12 +38,14 @@ function TrailsContent({ goals, onNewGoal, emptyMessage }: TrailsContentProps) {
           + Nova Meta
         </button>
       </div>
-      {goals.length === 0 && emptyMessage ? (
+      {isLoading ? (
+        <p className="mt-6 text-sm text-secondary">Carregando metas…</p>
+      ) : goals.length === 0 && emptyMessage ? (
         <p className="mt-6 text-sm text-secondary">{emptyMessage}</p>
       ) : (
         <ul className="mt-6 list-none space-y-5 p-0">
           {goals.map((goal) => (
-            <GoalRow key={goal.hub_id} goal={goal} />
+            <GoalRow key={goal.id} goal={goal} />
           ))}
         </ul>
       )}
@@ -56,27 +54,32 @@ function TrailsContent({ goals, onNewGoal, emptyMessage }: TrailsContentProps) {
 }
 
 type GoalRowProps = {
-  goal: EvolutionGoalWithHub
+  goal: UserGoalView
 }
 
 function GoalRow({ goal }: GoalRowProps) {
-  const pct = goalProgress(goal.current_hours, goal.target_hours)
+  const pct = goalProgress(goal.currentHours, goal.targetHours)
   const complete = pct >= 100
 
   return (
     <li>
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm text-primary">{goal.hubName}</span>
+        <div className="min-w-0">
+          <span className="block truncate text-sm text-primary">{goal.hubName}</span>
+          <span className="block truncate text-xs text-secondary">
+            {goal.subjectName} · {goal.periodLabel}
+          </span>
+        </div>
         <span className="shrink-0 text-xs tabular-nums text-secondary">
-          {formatHours(goal.current_hours)} / {formatHours(goal.target_hours)}
+          {formatHours(goal.currentHours)} / {formatHours(goal.targetHours)}
         </span>
       </div>
       <div
         className="mt-2 h-1.5 overflow-hidden rounded-sm bg-white/10"
         role="progressbar"
-        aria-valuenow={goal.current_hours}
+        aria-valuenow={goal.currentHours}
         aria-valuemin={0}
-        aria-valuemax={goal.target_hours}
+        aria-valuemax={goal.targetHours}
         aria-label={`Progresso em ${goal.hubName}`}
       >
         <div
@@ -92,28 +95,44 @@ function GoalRow({ goal }: GoalRowProps) {
 
 export function EvolutionTrails() {
   const { hasGlowAccess, openPaywall } = useUserPlan()
-  const { joinedSlugs } = useJoinedHubs()
-  const [toastVisible, setToastVisible] = useState(false)
-
-  const joinedGoals = useMemo(
-    () => goalsForJoinedHubs(joinedSlugs),
-    [joinedSlugs],
-  )
+  const { goals, isLoading, isCreating, createGoal, refresh } = useUserGoals()
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const [modalOpen, setModalOpen] = useState(false)
 
   const displayGoals = useMemo(() => {
-    if (joinedGoals.length > 0) return joinedGoals
-    if (!hasGlowAccess) return paywallTeaserGoals()
-    return []
-  }, [joinedGoals, hasGlowAccess])
+    if (hasGlowAccess) return goals
+    if (goals.length > 0) return goals
+    return paywallTeaserGoals()
+  }, [hasGlowAccess, goals])
 
-  const emptyMessage =
-    hasGlowAccess && joinedGoals.length === 0 ? EMPTY_GLOW_MESSAGE : undefined
+  const emptyMessage = useMemo(() => {
+    if (!hasGlowAccess) return undefined
+    if (isLoading) return undefined
+    if (goals.length > 0) return undefined
+    return EMPTY_GOALS_MESSAGE
+  }, [hasGlowAccess, isLoading, goals.length])
 
   const handleNewGoal = useCallback(() => {
-    setToastVisible(true)
-  }, [])
+    if (!hasGlowAccess) {
+      openPaywall()
+      return
+    }
+    setModalOpen(true)
+  }, [hasGlowAccess, openPaywall])
 
-  const dismissToast = useCallback(() => setToastVisible(false), [])
+  const handleCreate = useCallback(
+    async (input: CreateUserGoalInput) => {
+      const result = await createGoal(input)
+      if (!result.ok) {
+        if (result.code === 'forbidden') {
+          openPaywall()
+        }
+        throw new Error(result.message)
+      }
+      await refresh()
+    },
+    [createGoal, refresh, openPaywall],
+  )
 
   return (
     <section className="rounded-2xl border border-white/5 bg-panel p-6">
@@ -122,6 +141,7 @@ export function EvolutionTrails() {
           goals={displayGoals}
           onNewGoal={handleNewGoal}
           emptyMessage={emptyMessage}
+          isLoading={isLoading}
         />
       ) : (
         <div className="relative">
@@ -141,10 +161,12 @@ export function EvolutionTrails() {
         </div>
       )}
 
-      <AppToast
-        message={TOAST_MESSAGE}
-        visible={toastVisible}
-        onDismiss={dismissToast}
+      <CreateGoalModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreate={handleCreate}
+        prefersReducedMotion={prefersReducedMotion}
+        isSubmitting={isCreating}
       />
     </section>
   )

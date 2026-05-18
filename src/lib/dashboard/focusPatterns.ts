@@ -1,7 +1,10 @@
-export type StudySessionMock = {
+export type StudySessionPoint = {
   startedAt: Date
   durationMinutes: number
 }
+
+/** @deprecated Use StudySessionPoint */
+export type StudySessionMock = StudySessionPoint
 
 export type TimeBlock = 'madrugada' | 'manha' | 'tarde' | 'noite'
 
@@ -35,9 +38,9 @@ function seededRandom(seed: number): () => number {
   }
 }
 
-export function generateMockSessions(): StudySessionMock[] {
+export function generateMockSessions(): StudySessionPoint[] {
   const rand = seededRandom(42)
-  const sessions: StudySessionMock[] = []
+  const sessions: StudySessionPoint[] = []
   const now = new Date()
   const sessionCount = 40 + Math.floor(rand() * 41)
 
@@ -69,7 +72,7 @@ export type FocusPatternsStats = {
   boostPercent: number
 }
 
-export function aggregateByTimeBlock(sessions: StudySessionMock[]): FocusPatternsStats {
+export function aggregateByTimeBlock(sessions: StudySessionPoint[]): FocusPatternsStats {
   const minutesByBlock: Record<TimeBlock, number> = {
     madrugada: 0,
     manha: 0,

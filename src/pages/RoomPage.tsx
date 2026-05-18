@@ -13,6 +13,8 @@ import { useStudyPartners } from '@/contexts/StudyPartnersContext'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { useGlobalRoomTimer } from '@/hooks/useGlobalRoomTimer'
 import { useImmersiveTheme } from '@/hooks/useImmersiveTheme'
+import { useRecordStudySession } from '@/hooks/useRecordStudySession'
+import { useStudySessions } from '@/hooks/useStudySessions'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useStudyRoom } from '@/hooks/useStudyRoom'
 import { useRoomChat } from '@/hooks/useRoomChat'
@@ -70,11 +72,31 @@ export function RoomPage() {
   const staggerItem = pageStaggerItem(prefersReducedMotion)
 
   const timer = useGlobalRoomTimer(roomId, studyRoom)
-  const { phase, remainingSeconds, presentCount, isIdle, startFocusTimer } = timer
+  const {
+    phase,
+    remainingSeconds,
+    presentCount,
+    isIdle,
+    startFocusTimer,
+    isSegmentComplete,
+    startedAt,
+  } = timer
+  const { recordSession } = useStudySessions()
 
   const [sessionMode, setSessionMode] = useState<SessionMode>(() =>
     initialSessionMode(location.state),
   )
+
+  useRecordStudySession({
+    roomId,
+    studyRoom,
+    sessionMode,
+    phase,
+    isIdle,
+    isSegmentComplete,
+    startedAt,
+    recordSession,
+  })
   const [syncFlashUntil, setSyncFlashUntil] = useState(0)
   const [ritualGlow, setRitualGlow] = useState(false)
   const [timerRitualFade, setTimerRitualFade] = useState(false)
