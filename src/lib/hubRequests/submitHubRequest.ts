@@ -1,7 +1,6 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
+import type { HubRequestRow } from './types'
 import { validateRequestName } from './validateRequestName'
-
-const demoMode = import.meta.env.VITE_DEMO_MODE === 'true'
 
 function mapInsertError(message: string): string {
   const lower = message.toLowerCase()
@@ -14,15 +13,17 @@ function mapInsertError(message: string): string {
   return 'Não foi possível enviar a sugestão. Tente novamente.'
 }
 
-export async function submitHubRequest(requestedName: string): Promise<void> {
+export async function submitHubRequest(
+  userId: string,
+  requestedName: string,
+): Promise<HubRequestRow> {
+  if (!userId) {
+    throw new Error('Entre na sua conta para enviar uma sugestão.')
+  }
+
   const validation = validateRequestName(requestedName)
   if (!validation.ok) {
     throw new Error(validation.error)
-  }
-
-  if (demoMode) {
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    return
   }
 
   if (!isSupabaseConfigured) {
@@ -34,17 +35,22 @@ export async function submitHubRequest(requestedName: string): Promise<void> {
     throw new Error('Supabase não configurado.')
   }
 
-  const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError || !authData.user) {
-    throw new Error('Entre na sua conta para enviar uma sugestão.')
-  }
-
-  const { error } = await supabase.from('hub_requests').insert({
-    user_id: authData.user.id,
-    requested_name: validation.value,
-  })
+  const { data, error } = await supabase
+    .from('hub_requests')
+    .insert({
+      user_id: userId,
+      requested_name: validation.value,
+    })
+    .select()
+    .single()
 
   if (error) {
     throw new Error(mapInsertError(error.message))
   }
+
+  if (!data) {
+    throw new Error('Não foi possível enviar a sugestão. Tente novamente.')
+  }
+
+  return data as HubRequestRow
 }

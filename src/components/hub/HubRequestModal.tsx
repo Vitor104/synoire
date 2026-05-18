@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import {
   REQUEST_NAME_MAX,
   submitHubRequest,
@@ -21,6 +22,7 @@ export function HubRequestModal({
   onClose,
   prefersReducedMotion,
 }: HubRequestModalProps) {
+  const { user, isLoading: isAuthLoading } = useAuth()
   const [name, setName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
@@ -30,7 +32,7 @@ export function HubRequestModal({
   const staggerItem = pageStaggerItem(prefersReducedMotion)
 
   const validation = validateRequestName(name)
-  const canSubmit = validation.ok && !isSubmitting
+  const canSubmit = validation.ok && !isSubmitting && !isAuthLoading && Boolean(user?.id)
 
   const handleClose = useCallback(() => {
     setName('')
@@ -48,10 +50,14 @@ export function HubRequestModal({
         setError(result.error)
         return
       }
+      if (!user?.id) {
+        setError('Entre na sua conta para enviar uma sugestão.')
+        return
+      }
       setError(null)
       setIsSubmitting(true)
       try {
-        await submitHubRequest(result.value)
+        await submitHubRequest(user.id, result.value)
         setIsSuccess(true)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Não foi possível enviar a sugestão.')
@@ -59,7 +65,7 @@ export function HubRequestModal({
         setIsSubmitting(false)
       }
     },
-    [name],
+    [name, user?.id],
   )
 
   useEffect(() => {
