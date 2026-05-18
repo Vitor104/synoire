@@ -1,5 +1,8 @@
 import { useEffect, useId, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { StudyPartnersSidebar } from '@/components/dashboard/StudyPartnersSidebar'
+import { useStudyPartners } from '@/contexts/StudyPartnersContext'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   [
@@ -9,12 +12,48 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
       : 'text-secondary hover:bg-elevated hover:text-primary',
   ].join(' ')
 
-const NAV_LINKS: readonly { to: string; label: string; end?: boolean }[] = [
+const NAV_LINKS_BEFORE_PARTNERS: readonly { to: string; label: string; end?: boolean }[] = [
   { to: '/painel', label: 'Painel', end: true },
   { to: '/hubs', label: 'Hubs' },
-  { to: '/salas/demo', label: 'Sala de estudo' },
+]
+
+const NAV_LINKS_AFTER_PARTNERS: readonly { to: string; label: string; end?: boolean }[] = [
   { to: '/perfil', label: 'Perfil' },
 ]
+
+function ShellNavItems({
+  partnersOpen,
+  pendingCount,
+  onOpenPartners,
+  onNavigate,
+}: {
+  partnersOpen: boolean
+  pendingCount: number
+  onOpenPartners: () => void
+  onNavigate?: () => void
+}) {
+  const linkExtra = onNavigate ? { onClick: onNavigate } : {}
+
+  return (
+    <>
+      {NAV_LINKS_BEFORE_PARTNERS.map(({ to, label, end }) => (
+        <NavLink key={to} to={to} end={end} className={navClass} {...linkExtra}>
+          {label}
+        </NavLink>
+      ))}
+      <PartnersNavButton
+        onClick={onOpenPartners}
+        pendingCount={pendingCount}
+        isOpen={partnersOpen}
+      />
+      {NAV_LINKS_AFTER_PARTNERS.map(({ to, label, end }) => (
+        <NavLink key={to} to={to} end={end} className={navClass} {...linkExtra}>
+          {label}
+        </NavLink>
+      ))}
+    </>
+  )
+}
 
 function HamburgerIcon({ open }: { open: boolean }) {
   return (
@@ -41,10 +80,50 @@ function HamburgerIcon({ open }: { open: boolean }) {
   )
 }
 
+function PartnersNavButton({
+  onClick,
+  pendingCount,
+  isOpen,
+}: {
+  onClick: () => void
+  pendingCount: number
+  isOpen: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={isOpen}
+      className={[
+        'relative w-full rounded-lg px-3 py-2 text-left text-sm transition-colors',
+        isOpen
+          ? 'bg-firefly-dim text-firefly'
+          : 'text-secondary hover:bg-elevated hover:text-primary',
+      ].join(' ')}
+    >
+      Parceiros
+      {pendingCount > 0 && (
+        <span className="absolute right-2 top-1/2 flex h-4 min-w-4 -translate-y-1/2 items-center justify-center rounded-full bg-firefly/20 px-1 text-[10px] font-medium tabular-nums text-firefly">
+          {pendingCount}
+        </span>
+      )}
+    </button>
+  )
+}
+
 export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [partnersOpen, setPartnersOpen] = useState(false)
   const location = useLocation()
   const menuPanelId = useId()
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const { incomingInvites } = useStudyPartners()
+  const pendingCount = incomingInvites.length
+
+  const openPartners = () => {
+    setMenuOpen(false)
+    setPartnersOpen(true)
+  }
 
   useEffect(() => {
     setMenuOpen(false)
@@ -122,21 +201,13 @@ export function AppShell() {
             aria-label="Navegação principal"
             className="fixed left-0 right-0 top-16 z-50 max-h-[min(calc(100dvh-4rem),32rem)] min-[770px]:hidden overflow-y-auto border-b border-border bg-surface px-3 py-4 shadow-xl"
           >
-            <p className="mb-3 px-2 text-xs font-medium uppercase tracking-wider text-secondary">
-              Modo foco
-            </p>
             <nav className="flex flex-col gap-1">
-              {NAV_LINKS.map(({ to, label, end }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={end}
-                  className={navClass}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {label}
-                </NavLink>
-              ))}
+              <ShellNavItems
+                partnersOpen={partnersOpen}
+                pendingCount={pendingCount}
+                onOpenPartners={openPartners}
+                onNavigate={() => setMenuOpen(false)}
+              />
             </nav>
             <div className="mt-4 border-t border-border pt-4">
               <NavLink
@@ -163,14 +234,13 @@ export function AppShell() {
               className="block h-auto w-full max-h-28 object-contain object-left sm:max-h-32"
             />
           </NavLink>
-          <p className="mt-1 text-sm text-primary">Modo foco</p>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          {NAV_LINKS.map(({ to, label, end }) => (
-            <NavLink key={to} to={to} end={end} className={navClass}>
-              {label}
-            </NavLink>
-          ))}
+          <ShellNavItems
+            partnersOpen={partnersOpen}
+            pendingCount={pendingCount}
+            onOpenPartners={openPartners}
+          />
         </nav>
         <div className="mt-auto border-t border-border pt-4">
           <NavLink
@@ -185,6 +255,12 @@ export function AppShell() {
       <main className="min-w-0 flex-1 bg-night p-6 md:p-10">
         <Outlet />
       </main>
+
+      <StudyPartnersSidebar
+        open={partnersOpen}
+        onClose={() => setPartnersOpen(false)}
+        prefersReducedMotion={prefersReducedMotion}
+      />
     </div>
   )
 }

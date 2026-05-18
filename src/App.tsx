@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { GlowPaywallModal } from '@/components/premium/GlowPaywallModal'
 import { AppShell } from '@/components/layout/AppShell'
 import { JoinedHubsProvider } from '@/contexts/JoinedHubsContext'
+import { StudyPartnersProvider } from '@/contexts/StudyPartnersContext'
 import { UserPlanProvider } from '@/contexts/UserPlanContext'
 import { AuthPage } from '@/pages/AuthPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -31,12 +32,14 @@ export function AppRoutes() {
 export default function App() {
   return (
     <UserPlanProvider>
-      <JoinedHubsProvider>
-        <BrowserRouter>
+      <StudyPartnersProvider>
+        <JoinedHubsProvider>
+          <BrowserRouter>
           <AppRoutes />
           <GlowPaywallModal />
-        </BrowserRouter>
-      </JoinedHubsProvider>
+          </BrowserRouter>
+        </JoinedHubsProvider>
+      </StudyPartnersProvider>
     </UserPlanProvider>
   )
 }

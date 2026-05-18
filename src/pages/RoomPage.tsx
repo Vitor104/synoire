@@ -6,8 +6,10 @@ import { PreRoomLounge } from '@/components/room/PreRoomLounge'
 import { RoomChat, RoomChatToggleButton } from '@/components/room/RoomChat'
 import { RoomMediaEmbed } from '@/components/room/RoomMediaEmbed'
 import { SessionOnboarding } from '@/components/room/SessionOnboarding'
+import { InvitePartnersModal } from '@/components/room/InvitePartnersModal'
 import { ThemeSelectorModal } from '@/components/room/ThemeSelectorModal'
 import { SAMPLE_HUBS } from '@/data/sampleHubs'
+import { useStudyPartners } from '@/contexts/StudyPartnersContext'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { useGlobalRoomTimer } from '@/hooks/useGlobalRoomTimer'
 import { useImmersiveTheme } from '@/hooks/useImmersiveTheme'
@@ -62,6 +64,7 @@ export function RoomPage() {
   )
   const prefersReducedMotion = usePrefersReducedMotion()
   const { hasGlowAccess } = useUserPlan()
+  const { acceptedPartners } = useStudyPartners()
   const { selectedThemeId, effectiveThemeId, setTheme } = useImmersiveTheme()
   const staggerC = pageStaggerContainer(prefersReducedMotion)
   const staggerItem = pageStaggerItem(prefersReducedMotion)
@@ -79,6 +82,7 @@ export function RoomPage() {
   const [chromeLit, setChromeLit] = useState(false)
   const [themeModalOpen, setThemeModalOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  const [invitePartnersOpen, setInvitePartnersOpen] = useState(false)
   const ambientRestoredRef = useRef(false)
   const idleTimerRef = useRef<number | null>(null)
   const prevPhaseRef = useRef(phase)
@@ -374,7 +378,19 @@ export function RoomPage() {
           >
             Sair
           </Link>
-          <motion.div className="pointer-events-auto flex items-center gap-2">
+          <div className="pointer-events-auto flex items-center gap-2">
+            {studyRoom?.is_private && hasGlowAccess && (
+              <button
+                type="button"
+                onClick={() => {
+                  setInvitePartnersOpen(true)
+                  setChatOpen(false)
+                }}
+                className="rounded-lg px-3 py-2 text-sm text-firefly hover:bg-elevated"
+              >
+                Convidar Parceiros
+              </button>
+            )}
             <RoomChatToggleButton
               open={chatOpen}
               unreadCount={roomChat.unreadCount}
@@ -391,7 +407,7 @@ export function RoomPage() {
             >
               Ambiente
             </button>
-          </motion.div>
+          </div>
         </motion.div>
       )}
 
@@ -428,6 +444,16 @@ export function RoomPage() {
         sound={sound}
         prefersReducedMotion={prefersReducedMotion}
       />
+
+      {roomId && studyRoom?.is_private && hasGlowAccess && (
+        <InvitePartnersModal
+          open={invitePartnersOpen}
+          onClose={() => setInvitePartnersOpen(false)}
+          roomId={roomId}
+          partners={acceptedPartners}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+      )}
 
       <RoomMediaEmbed
         embed={sound.externalEmbed}
