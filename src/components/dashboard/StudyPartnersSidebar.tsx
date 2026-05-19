@@ -78,10 +78,12 @@ function IncomingInviteRow({
   partner,
   onAccept,
   onDecline,
+  disabled,
 }: {
   partner: StudyPartnerView
   onAccept: (id: string) => void
   onDecline: (id: string) => void
+  disabled?: boolean
 }) {
   return (
     <li className="flex items-center gap-3 rounded-xl border border-white/5 px-2 py-2.5">
@@ -92,15 +94,17 @@ function IncomingInviteRow({
       <div className="flex shrink-0 gap-1.5">
         <button
           type="button"
+          disabled={disabled}
           onClick={() => onAccept(partner.partnershipId)}
-          className="rounded-lg border border-firefly/30 bg-firefly/10 px-2 py-1 text-[11px] font-medium text-firefly hover:brightness-110"
+          className="rounded-lg border border-firefly/30 bg-firefly/10 px-2 py-1 text-[11px] font-medium text-firefly hover:brightness-110 disabled:opacity-50"
         >
           Aceitar
         </button>
         <button
           type="button"
+          disabled={disabled}
           onClick={() => onDecline(partner.partnershipId)}
-          className="rounded-lg border border-white/10 px-2 py-1 text-[11px] text-secondary hover:bg-elevated hover:text-primary"
+          className="rounded-lg border border-white/10 px-2 py-1 text-[11px] text-secondary hover:bg-elevated hover:text-primary disabled:opacity-50"
         >
           Recusar
         </button>
@@ -155,12 +159,15 @@ export function StudyPartnersSidebar({
     offlinePartners,
     incomingInvites,
     outgoingInvites,
+    isLoading,
+    error,
     sendPartnerInvite,
     acceptInvite,
     declineInvite,
   } = useStudyPartners()
 
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
+  const [actingId, setActingId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({
     message: '',
     visible: false,
@@ -179,8 +186,8 @@ export function StudyPartnersSidebar({
   )
 
   const handleSendInvite = useCallback(
-    (username: string) => {
-      const result = sendPartnerInvite(username)
+    async (username: string) => {
+      const result = await sendPartnerInvite(username)
       if (!result.ok) {
         if (result.error === 'not_found') {
           return { ok: false as const, error: 'Estudante não encontrado. Verifique o @username.' }
@@ -191,12 +198,33 @@ export function StudyPartnersSidebar({
             error: 'Já existe convite ou parceria com este usuário.',
           }
         }
+        if (result.error === 'self_invite') {
+          return { ok: false as const, error: 'Você não pode convidar a si mesmo.' }
+        }
         return { ok: false as const, error: 'Username inválido.' }
       }
       showToast('Convite enviado.')
       return { ok: true as const }
     },
     [sendPartnerInvite, showToast],
+  )
+
+  const handleAccept = useCallback(
+    async (partnershipId: string) => {
+      setActingId(partnershipId)
+      await acceptInvite(partnershipId)
+      setActingId(null)
+    },
+    [acceptInvite],
+  )
+
+  const handleDecline = useCallback(
+    async (partnershipId: string) => {
+      setActingId(partnershipId)
+      await declineInvite(partnershipId)
+      setActingId(null)
+    },
+    [declineInvite],
   )
 
   const slide = prefersReducedMotion
@@ -211,13 +239,18 @@ export function StudyPartnersSidebar({
     <>
       <AnimatePresence>
         {open && (
-          <motion.aside
+            <motion.aside
             role="dialog"
             aria-label="Parceiros de estudo"
             className="pointer-events-auto fixed bottom-0 right-0 top-0 z-40 flex w-[min(100%,22rem)] flex-col border-l border-white/5 bg-panel shadow-xl"
             {...slide}
             transition={{ duration: prefersReducedMotion ? 0 : 0.28, ease: [0.42, 0, 0.58, 1] }}
           >
+            {error && (
+              <p className="border-b border-white/5 px-4 py-2 text-xs text-secondary" role="alert">
+                {error}
+              </p>
+            )}
             <header className="flex shrink-0 items-center justify-between border-b border-white/5 px-4 py-3">
               <h2 className="text-sm font-medium text-primary">Parceiros</h2>
               <button
@@ -231,6 +264,10 @@ export function StudyPartnersSidebar({
             </header>
 
             <div className="min-h-0 flex-1 overflow-y-auto">
+              {isLoading ? (
+                <p className="px-4 py-6 text-xs text-secondary">Carregando parceiros…</p>
+              ) : (
+                <>
               <Section
                 title="Focando agora"
                 empty={
@@ -261,14 +298,17 @@ export function StudyPartnersSidebar({
                     <IncomingInviteRow
                       key={p.partnershipId}
                       partner={p}
-                      onAccept={acceptInvite}
-                      onDecline={declineInvite}
+                      onAccept={handleAccept}
+                      onDecline={handleDecline}
+                      disabled={actingId === p.partnershipId}
                     />
                   ))}
                   {outgoingInvites.map((p) => (
                     <OutgoingInviteRow key={p.partnershipId} partner={p} />
                   ))}
                 </Section>
+              )}
+                </>
               )}
             </div>
 

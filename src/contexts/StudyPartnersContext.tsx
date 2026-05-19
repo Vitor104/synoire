@@ -2,63 +2,137 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePartnerPresence } from '@/hooks/usePartnerPresence'
 import {
-  acceptPartnership,
   buildPartnerLists,
-  declinePartnership,
-  readPartnerships,
-  sendPartnerInvite,
+  fetchPartnerEnrichment,
+  listPartnerships,
+  sendPartnerInvite as sendPartnerInviteLib,
+  updatePartnershipStatus,
+  type MappedPartnership,
   type PartnerLists,
+  type PartnerProfileEnrichment,
   type SendInviteResult,
 } from '@/lib/studyPartners'
 
 type StudyPartnersContextValue = PartnerLists & {
-  sendPartnerInvite: (username: string) => SendInviteResult
-  acceptInvite: (partnershipId: string) => void
-  declineInvite: (partnershipId: string) => void
-  refresh: () => void
+  isLoading: boolean
+  error: string | null
+  sendPartnerInvite: (username: string) => Promise<SendInviteResult>
+  acceptInvite: (partnershipId: string) => Promise<void>
+  declineInvite: (partnershipId: string) => Promise<void>
+  refresh: () => Promise<void>
 }
 
 const StudyPartnersContext = createContext<StudyPartnersContextValue | null>(null)
 
 export function StudyPartnersProvider({ children }: { children: ReactNode }) {
-  const [partnerships, setPartnerships] = useState(() => readPartnerships())
+  const { user, isLoading: authLoading } = useAuth()
+  const [partnerships, setPartnerships] = useState<MappedPartnership[]>([])
+  const [enrichment, setEnrichment] = useState(
+    () => new Map<string, PartnerProfileEnrichment>(),
+  )
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const refresh = useCallback(() => {
-    setPartnerships(readPartnerships())
-  }, [])
+  const partnerUserIds = useMemo(
+    () => partnerships.map((p) => p.partnerUserId),
+    [partnerships],
+  )
+  const presence = usePartnerPresence(partnerUserIds)
 
-  const lists = useMemo(() => buildPartnerLists(partnerships), [partnerships])
+  const lists = useMemo(
+    () => buildPartnerLists(partnerships, enrichment, presence),
+    [partnerships, enrichment, presence],
+  )
 
-  const sendInvite = useCallback((username: string): SendInviteResult => {
-    const result = sendPartnerInvite(username)
-    if (result.ok) {
-      setPartnerships(readPartnerships())
+  const refresh = useCallback(async () => {
+    const userId = user?.id
+    if (!userId) {
+      setPartnerships([])
+      setEnrichment(new Map())
+      setError(null)
+      setIsLoading(false)
+      return
     }
-    return result
-  }, [])
 
-  const acceptInvite = useCallback((partnershipId: string) => {
-    setPartnerships(acceptPartnership(partnershipId))
-  }, [])
+    setIsLoading(true)
+    setError(null)
 
-  const declineInvite = useCallback((partnershipId: string) => {
-    setPartnerships(declinePartnership(partnershipId))
-  }, [])
+    const partnershipsResult = await listPartnerships(userId)
+    if (!partnershipsResult.ok) {
+      setPartnerships([])
+      setEnrichment(new Map())
+      setError(partnershipsResult.message)
+      setIsLoading(false)
+      return
+    }
+
+    setPartnerships(partnershipsResult.data)
+    const partnerIds = partnershipsResult.data.map((p) => p.partnerUserId)
+    setEnrichment(await fetchPartnerEnrichment(partnerIds))
+    setError(null)
+    setIsLoading(false)
+  }, [user?.id])
+
+  useEffect(() => {
+    if (authLoading) return
+    void refresh()
+  }, [authLoading, refresh])
+
+  const sendInvite = useCallback(
+    async (username: string): Promise<SendInviteResult> => {
+      const userId = user?.id
+      if (!userId) {
+        return { ok: false, error: 'invalid_username' }
+      }
+
+      const result = await sendPartnerInviteLib(userId, username)
+      if (result.ok) {
+        await refresh()
+      }
+      return result
+    },
+    [user?.id, refresh],
+  )
+
+  const acceptInvite = useCallback(
+    async (partnershipId: string) => {
+      const update = await updatePartnershipStatus(partnershipId, 'accepted')
+      if (update.ok) {
+        await refresh()
+      }
+    },
+    [refresh],
+  )
+
+  const declineInvite = useCallback(
+    async (partnershipId: string) => {
+      const update = await updatePartnershipStatus(partnershipId, 'rejected')
+      if (update.ok) {
+        await refresh()
+      }
+    },
+    [refresh],
+  )
 
   const value = useMemo(
     () => ({
       ...lists,
+      isLoading: authLoading || isLoading,
+      error,
       sendPartnerInvite: sendInvite,
       acceptInvite,
       declineInvite,
       refresh,
     }),
-    [lists, sendInvite, acceptInvite, declineInvite, refresh],
+    [lists, authLoading, isLoading, error, sendInvite, acceptInvite, declineInvite, refresh],
   )
 
   return (

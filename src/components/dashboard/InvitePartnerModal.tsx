@@ -9,7 +9,9 @@ type InvitePartnerModalProps = {
   open: boolean
   onClose: () => void
   prefersReducedMotion: boolean
-  onSend: (username: string) => { ok: true } | { ok: false; error: string }
+  onSend: (
+    username: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>
 }
 
 export function InvitePartnerModal({
@@ -33,12 +35,14 @@ export function InvitePartnerModal({
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
-      const result = onSend(username)
-      if (!result.ok) {
-        setError(result.error)
-        return
-      }
-      handleClose()
+      void (async () => {
+        const result = await onSend(username)
+        if (!result.ok) {
+          setError(result.error)
+          return
+        }
+        handleClose()
+      })()
     },
     [username, onSend, handleClose],
   )

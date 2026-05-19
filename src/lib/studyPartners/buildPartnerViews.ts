@@ -1,15 +1,20 @@
-import { findProfileById, MOCK_USER_PROFILES } from './mockProfiles'
 import type {
+  MappedPartnership,
   PartnerLists,
-  StoredPartnership,
+  PartnerPresenceEntry,
+  PartnerProfileEnrichment,
   StudyPartnerView,
 } from './types'
 
 function toView(
-  partnership: StoredPartnership,
+  partnership: MappedPartnership,
+  enrichment: Map<string, PartnerProfileEnrichment>,
+  presence: Map<string, PartnerPresenceEntry>,
 ): StudyPartnerView | null {
-  const profile = findProfileById(partnership.partnerUserId)
+  const profile = enrichment.get(partnership.partnerUserId)
   if (!profile) return null
+
+  const presenceEntry = presence.get(partnership.partnerUserId)
 
   return {
     id: profile.id,
@@ -17,17 +22,21 @@ function toView(
     displayName: profile.displayName,
     avatarUrl: profile.avatarUrl,
     currentStreak: profile.currentStreak,
-    isOnline: profile.isOnline,
-    currentRoomLabel: profile.currentRoomLabel,
-    currentRoomId: profile.currentRoomId,
+    isOnline: presenceEntry?.isOnline ?? false,
+    currentRoomLabel: presenceEntry?.roomLabel ?? null,
+    currentRoomId: presenceEntry?.roomId ?? null,
     partnershipStatus: partnership.status,
     partnershipId: partnership.id,
   }
 }
 
-export function buildPartnerLists(partnerships: StoredPartnership[]): PartnerLists {
+export function buildPartnerLists(
+  partnerships: MappedPartnership[],
+  enrichment: Map<string, PartnerProfileEnrichment>,
+  presence: Map<string, PartnerPresenceEntry> = new Map(),
+): PartnerLists {
   const views = partnerships
-    .map(toView)
+    .map((p) => toView(p, enrichment, presence))
     .filter((v): v is StudyPartnerView => v !== null)
 
   const acceptedPartners = views.filter((v) => v.partnershipStatus === 'accepted')
@@ -43,8 +52,4 @@ export function buildPartnerLists(partnerships: StoredPartnership[]): PartnerLis
     incomingInvites,
     outgoingInvites,
   }
-}
-
-export function getMockCatalogUsernames(): string[] {
-  return MOCK_USER_PROFILES.map((p) => p.username)
 }

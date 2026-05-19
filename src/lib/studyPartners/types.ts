@@ -1,27 +1,37 @@
-export const STUDY_PARTNERSHIPS_STORAGE_KEY = 'synoire_study_partnerships'
+export type PartnershipDbStatus = 'pending' | 'accepted' | 'rejected'
 
 export type PartnershipStatus =
   | 'pending_incoming'
   | 'pending_outgoing'
   | 'accepted'
-  | 'declined'
 
-export type StoredPartnership = {
+export type PartnershipRow = {
+  id: string
+  sender_id: string
+  receiver_id: string
+  status: PartnershipDbStatus
+  created_at?: string | null
+}
+
+export type MappedPartnership = {
   id: string
   partnerUserId: string
   status: PartnershipStatus
   createdAt: string
 }
 
-export type MockUserProfile = {
+export type PartnerProfileEnrichment = {
   id: string
   username: string
   displayName: string
   avatarUrl: string
   currentStreak: number
+}
+
+export type PartnerPresenceEntry = {
   isOnline: boolean
-  currentRoomLabel: string | null
-  currentRoomId: string | null
+  roomId: string | null
+  roomLabel: string | null
 }
 
 export type StudyPartnerView = {
@@ -44,3 +54,11 @@ export type PartnerLists = {
   incomingInvites: StudyPartnerView[]
   outgoingInvites: StudyPartnerView[]
 }
+
+export type PartnershipsResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; message: string }
+
+export type SendInviteResult =
+  | { ok: true }
+  | { ok: false; error: 'not_found' | 'already_exists' | 'invalid_username' | 'self_invite' }
