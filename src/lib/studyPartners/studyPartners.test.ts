@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { applyPartnershipRealtimeEvent } from './applyPartnershipRealtimeEvent'
 import { buildPartnerLists } from './buildPartnerViews'
 import {
   getPartnerUserId,
@@ -84,6 +85,111 @@ describe('getPartnerUserId', () => {
     expect(
       getPartnerUserId(row({ sender_id: PARTNER, receiver_id: ME }), ME),
     ).toBe(PARTNER)
+  })
+})
+
+describe('applyPartnershipRealtimeEvent', () => {
+  const initial: MappedPartnership[] = [
+    {
+      id: 'ps-in',
+      partnerUserId: PARTNER,
+      status: 'pending_incoming',
+      createdAt: '2026-05-18T12:00:00Z',
+    },
+  ]
+
+  it('adds incoming invite on INSERT when user is receiver', () => {
+    const result = applyPartnershipRealtimeEvent(
+      [],
+      {
+        type: 'INSERT',
+        row: row({ sender_id: PARTNER, receiver_id: ME, status: 'pending' }),
+      },
+      ME,
+    )
+    expect(result.partnerships).toHaveLength(1)
+    expect(result.partnerships[0]?.status).toBe('pending_incoming')
+    expect(result.showIncomingInviteToast).toBe(true)
+    expect(result.partnerUserIdToEnrich).toBe(PARTNER)
+  })
+
+  it('adds outgoing invite on INSERT without toast when user is sender', () => {
+    const result = applyPartnershipRealtimeEvent(
+      [],
+      { type: 'INSERT', row: row({ status: 'pending' }) },
+      ME,
+    )
+    expect(result.partnerships[0]?.status).toBe('pending_outgoing')
+    expect(result.showIncomingInviteToast).toBe(false)
+  })
+
+  it('moves invite to accepted on UPDATE', () => {
+    const result = applyPartnershipRealtimeEvent(
+      initial,
+      {
+        type: 'UPDATE',
+        row: row({
+          id: 'ps-in',
+          sender_id: PARTNER,
+          receiver_id: ME,
+          status: 'accepted',
+        }),
+      },
+      ME,
+    )
+    expect(result.partnerships[0]?.status).toBe('accepted')
+    expect(result.showIncomingInviteToast).toBe(false)
+  })
+
+  it('removes invite on UPDATE rejected', () => {
+    const result = applyPartnershipRealtimeEvent(
+      initial,
+      {
+        type: 'UPDATE',
+        row: row({
+          id: 'ps-in',
+          sender_id: PARTNER,
+          receiver_id: ME,
+          status: 'rejected',
+        }),
+      },
+      ME,
+    )
+    expect(result.partnerships).toHaveLength(0)
+    expect(result.removedPartnerUserId).toBe(PARTNER)
+  })
+
+  it('removes partnership on DELETE', () => {
+    const result = applyPartnershipRealtimeEvent(
+      initial,
+      {
+        type: 'DELETE',
+        row: row({ id: 'ps-in', sender_id: PARTNER, receiver_id: ME }),
+      },
+      ME,
+    )
+    expect(result.partnerships).toHaveLength(0)
+    expect(result.removedPartnerUserId).toBe(PARTNER)
+  })
+
+  it('dedupes INSERT by partnership id', () => {
+    const first = applyPartnershipRealtimeEvent(
+      [],
+      {
+        type: 'INSERT',
+        row: row({ id: 'ps-1', status: 'pending' }),
+      },
+      ME,
+    )
+    const second = applyPartnershipRealtimeEvent(
+      first.partnerships,
+      {
+        type: 'INSERT',
+        row: row({ id: 'ps-1', status: 'pending' }),
+      },
+      ME,
+    )
+    expect(second.partnerships).toHaveLength(1)
   })
 })
 

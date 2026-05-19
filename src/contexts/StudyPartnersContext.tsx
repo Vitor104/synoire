@@ -7,14 +7,20 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { AppToast } from '@/components/ui/AppToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePartnerPresence } from '@/hooks/usePartnerPresence'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import {
+  applyPartnershipRealtimeEvent,
   buildPartnerLists,
   fetchPartnerEnrichment,
+  isDemoMode,
   listPartnerships,
   sendPartnerInvite as sendPartnerInviteLib,
+  subscribePartnershipsRealtime,
   updatePartnershipStatus,
+  type ApplyPartnershipRealtimeResult,
   type MappedPartnership,
   type PartnerLists,
   type PartnerProfileEnrichment,
@@ -40,6 +46,7 @@ export function StudyPartnersProvider({ children }: { children: ReactNode }) {
   )
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [inviteToast, setInviteToast] = useState({ message: '', visible: false })
 
   const partnerUserIds = useMemo(
     () => partnerships.map((p) => p.partnerUserId),
@@ -51,6 +58,36 @@ export function StudyPartnersProvider({ children }: { children: ReactNode }) {
     () => buildPartnerLists(partnerships, enrichment, presence),
     [partnerships, enrichment, presence],
   )
+
+  const applyRealtimeSideEffects = useCallback((result: ApplyPartnershipRealtimeResult) => {
+    if (result.removedPartnerUserId) {
+      setEnrichment((prev) => {
+        const next = new Map(prev)
+        next.delete(result.removedPartnerUserId!)
+        return next
+      })
+    }
+
+    if (!result.partnerUserIdToEnrich) return
+
+    const partnerId = result.partnerUserIdToEnrich
+    const showToast = result.showIncomingInviteToast
+
+    void fetchPartnerEnrichment([partnerId]).then((fetched) => {
+      setEnrichment((prev) => {
+        const next = new Map(prev)
+        for (const [id, profile] of fetched) next.set(id, profile)
+        return next
+      })
+      if (showToast) {
+        const username = fetched.get(partnerId)?.username ?? 'estudante'
+        setInviteToast({
+          message: `Você recebeu um novo convite de @${username}!`,
+          visible: true,
+        })
+      }
+    })
+  }, [])
 
   const refresh = useCallback(async () => {
     const userId = user?.id
@@ -85,6 +122,21 @@ export function StudyPartnersProvider({ children }: { children: ReactNode }) {
     if (authLoading) return
     void refresh()
   }, [authLoading, refresh])
+
+  useEffect(() => {
+    const userId = user?.id
+    if (!userId || authLoading || isDemoMode || !isSupabaseConfigured) return
+
+    return subscribePartnershipsRealtime(userId, (event) => {
+      let sideEffect: ApplyPartnershipRealtimeResult | null = null
+      setPartnerships((prev) => {
+        const result = applyPartnershipRealtimeEvent(prev, event, userId)
+        sideEffect = result
+        return result.partnerships
+      })
+      if (sideEffect) applyRealtimeSideEffects(sideEffect)
+    })
+  }, [user?.id, authLoading, applyRealtimeSideEffects])
 
   const sendInvite = useCallback(
     async (username: string): Promise<SendInviteResult> => {
@@ -136,7 +188,14 @@ export function StudyPartnersProvider({ children }: { children: ReactNode }) {
   )
 
   return (
-    <StudyPartnersContext.Provider value={value}>{children}</StudyPartnersContext.Provider>
+    <StudyPartnersContext.Provider value={value}>
+      {children}
+      <AppToast
+        message={inviteToast.message}
+        visible={inviteToast.visible}
+        onDismiss={() => setInviteToast((t) => ({ ...t, visible: false }))}
+      />
+    </StudyPartnersContext.Provider>
   )
 }
 

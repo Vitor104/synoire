@@ -1,3 +1,8 @@
+export {
+  applyPartnershipRealtimeEvent,
+  type ApplyPartnershipRealtimeResult,
+  type PartnershipRealtimeEvent,
+} from './applyPartnershipRealtimeEvent'
 export { buildPartnerLists } from './buildPartnerViews'
 export { createPartnership } from './createPartnership'
 export { deletePartnership } from './deletePartnership'
@@ -12,6 +17,7 @@ export {
   mapPartnershipRows,
 } from './mapPartnershipRow'
 export { sendPartnerInvite } from './sendPartnerInvite'
+export { subscribePartnershipsRealtime } from './subscribePartnershipsRealtime'
 export { updatePartnershipStatus } from './updatePartnershipStatus'
 export type {
   MappedPartnership,
