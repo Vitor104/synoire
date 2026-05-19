@@ -2,12 +2,13 @@ import { useMemo } from 'react'
 import { motion, type Variants } from 'motion/react'
 import { EvolutionTrails } from '@/components/dashboard/EvolutionTrails'
 import { FocusPatterns } from '@/components/dashboard/FocusPatterns'
+import { StreakPredictionCard } from '@/components/dashboard/StreakPredictionCard'
+import { YearHeatmap } from '@/components/dashboard/YearHeatmap'
 import { GlowLockedOverlay } from '@/components/premium/GlowLockedOverlay'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useStudySessions } from '@/hooks/useStudySessions'
 import { useUserStats } from '@/hooks/useUserStats'
 import {
-  buildHeatmap,
   buildWeeklyBars,
   formatStudyHours,
   minutesStudiedLast7Days,
@@ -19,9 +20,6 @@ import {
   pageStaggerItem,
   pageStaggerListInner,
 } from '@/motion/pageStagger'
-
-const HEATMAP_WEEKS = 4
-const HEATMAP_DAYS = 7
 
 function MetricColumn({
   label,
@@ -43,11 +41,6 @@ function MetricColumn({
   )
 }
 
-function heatmapColor(intensity: number): string {
-  if (intensity === 0) return 'rgb(26 26 18 / 0.5)'
-  return `rgb(163 163 79 / ${0.12 + intensity * 0.18})`
-}
-
 export function DashboardPage() {
   const reduced = usePrefersReducedMotion()
   const c = pageStaggerContainer(reduced)
@@ -63,10 +56,6 @@ export function DashboardPage() {
   const todayMinutes = useMemo(() => minutesStudiedToday(points), [points])
   const weeklyMinutes = useMemo(() => minutesStudiedLast7Days(points), [points])
   const weeklyBars = useMemo(() => buildWeeklyBars(points), [points])
-  const heatmapCells = useMemo(
-    () => buildHeatmap(points, HEATMAP_WEEKS, HEATMAP_DAYS),
-    [points],
-  )
 
   const weeklyTargetHours = (stats.dailyGoalMinutes * 7) / 60
   const weeklyTargetLabel =
@@ -106,7 +95,7 @@ export function DashboardPage() {
           <span className="text-firefly">|</span> Painel
         </h1>
         <p className="mt-1 text-sm text-secondary">
-          Visão rápida da sua constância de estudos.
+          Vis?o r?pida da sua const?ncia de estudos.
         </p>
       </motion.header>
 
@@ -117,31 +106,31 @@ export function DashboardPage() {
         <MetricColumn
           variants={item}
           label="Hoje"
-          value={isLoading ? '…' : formatStudyHours(todayMinutes)}
+          value={isLoading ? '???' : formatStudyHours(todayMinutes)}
           hint="Horas estudadas hoje"
         />
         <MetricColumn
           variants={item}
           label="Streak"
-          value={isLoading ? '…' : streakLabel}
-          hint="Sua sequência atual de consistência"
+          value={isLoading ? '???' : streakLabel}
+          hint="Sua sequ?ncia atual de consist?ncia"
         />
         <MetricColumn
           variants={item}
           label="Meta semanal"
           value={
             isLoading ?
-              '…'
+              '???'
             : `${formatStudyHours(weeklyMinutes)} / ${weeklyTargetLabel}`
           }
-          hint="Progresso nos últimos 7 dias"
+          hint="Progresso nos ?ltimos 7 dias"
         />
       </motion.div>
 
       <motion.section variants={item} className="mt-12">
         <motion.div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-medium text-primary">Evolução semanal</h2>
+            <h2 className="text-sm font-medium text-primary">Evolu??o semanal</h2>
             <span className="rounded-full border border-firefly/40 bg-firefly/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-firefly">
               Live
             </span>
@@ -149,7 +138,7 @@ export function DashboardPage() {
           {growthPercent !== null && (
             <div className="flex items-center gap-1.5 rounded-full border border-border bg-elevated/80 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wide text-primary">
               <span className="text-firefly" aria-hidden>
-                {growthPercent >= 0 ? '↑' : '↓'}
+                {growthPercent >= 0 ? '\u2191' : '\u2193'}
               </span>
               {growthPercent >= 0 ? '+' : ''}
               {growthPercent}% crescimento
@@ -188,74 +177,31 @@ export function DashboardPage() {
         </div>
       </motion.section>
 
-      <motion.section
-        variants={item}
-        className="mt-10 rounded-2xl border border-border bg-surface p-6"
-      >
-        <h2 className="text-sm font-medium text-primary">Previsão de Streak</h2>
-        <p className="mt-2 text-sm text-secondary">
-          Projeção com base no seu ritmo recente.
-        </p>
-        <GlowLockedOverlay className="mt-6">
-          <div className="space-y-4">
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-semibold tabular-nums text-firefly">
-                {streakDays > 0 ? `+${Math.min(streakDays + 4, streakDays * 2)} dias` : '—'}
-              </span>
-              <span className="text-xs text-secondary">
-                {sessions.length >= 5 ? 'confiança alta' : 'em construção'}
-              </span>
-            </div>
-            <div className="flex h-24 items-end gap-1">
-              {weeklyBars.map((bar) => {
-                const h = bar.minutes === 0 ? 8 : bar.percent
-                return (
-                  <div
-                    key={`streak-${bar.label}`}
-                    className="flex-1 rounded-t bg-aqua/25"
-                    style={{ height: `${h}%` }}
-                  />
-                )
-              })}
-            </div>
-            <p className="text-xs text-secondary">
-              {streakDays > 0 ?
-                `Você está com ${streakLabel} de ofensiva. Continue estudando para manter o ritmo.`
-              : 'Complete um pomodoro em uma sala para iniciar sua ofensiva.'}
-            </p>
-          </div>
-        </GlowLockedOverlay>
-      </motion.section>
+      <motion.div variants={item}>
+        <StreakPredictionCard
+          sessions={points}
+          weeklyBars={weeklyBars}
+          currentStreak={streakDays}
+          isLoading={isLoading}
+        />
+      </motion.div>
+
 
       <motion.section
         variants={item}
         className="mt-6 rounded-2xl border border-border bg-surface p-6"
       >
-        <h2 className="text-sm font-medium text-primary">Heatmap de constância</h2>
+        <h2 className="text-sm font-medium text-primary">Heatmap de constancia</h2>
         <p className="mt-2 text-sm text-secondary">
-          Intensidade de foco por dia nas últimas semanas.
+          Intensidade de foco por dia em {new Date().getFullYear()}.
         </p>
         <GlowLockedOverlay className="mt-6">
-          <div
-            className="grid gap-1.5"
-            style={{
-              gridTemplateColumns: `repeat(${HEATMAP_DAYS}, minmax(0, 1fr))`,
-            }}
-          >
-            {heatmapCells.map((cell) => (
-              <div
-                key={cell.dateKey}
-                className="aspect-square rounded-sm"
-                style={{ backgroundColor: heatmapColor(cell.intensity) }}
-                title={cell.dateKey}
-              />
-            ))}
-          </div>
+          <YearHeatmap sessions={points} />
         </GlowLockedOverlay>
       </motion.section>
 
       <motion.section variants={item} className="mt-6">
-        <FocusPatterns />
+        <FocusPatterns sessions={sessions} isLoading={sessionsLoading} />
       </motion.section>
 
       <motion.section variants={item} className="mt-6">

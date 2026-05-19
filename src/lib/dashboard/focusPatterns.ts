@@ -1,10 +1,9 @@
+import { hourInTz, STUDY_TIMEZONE } from '@/lib/dashboard/studyAnalytics'
+
 export type StudySessionPoint = {
   startedAt: Date
   durationMinutes: number
 }
-
-/** @deprecated Use StudySessionPoint */
-export type StudySessionMock = StudySessionPoint
 
 export type TimeBlock = 'madrugada' | 'manha' | 'tarde' | 'noite'
 
@@ -22,41 +21,15 @@ export const TIME_BLOCK_LABELS: Record<TimeBlock, string> = {
   noite: 'Noite',
 }
 
-export function getTimeBlock(date: Date): TimeBlock {
-  const hour = date.getHours()
+export function getTimeBlock(
+  date: Date,
+  timeZone: string = STUDY_TIMEZONE,
+): TimeBlock {
+  const hour = hourInTz(date, timeZone)
   if (hour >= 6 && hour <= 11) return 'manha'
   if (hour >= 12 && hour <= 17) return 'tarde'
   if (hour >= 18 && hour <= 23) return 'noite'
   return 'madrugada'
-}
-
-function seededRandom(seed: number): () => number {
-  let s = seed
-  return () => {
-    s = (s * 16807 + 0) % 2147483647
-    return (s - 1) / 2147483646
-  }
-}
-
-export function generateMockSessions(): StudySessionPoint[] {
-  const rand = seededRandom(42)
-  const sessions: StudySessionPoint[] = []
-  const now = new Date()
-  const sessionCount = 40 + Math.floor(rand() * 41)
-
-  for (let i = 0; i < sessionCount; i++) {
-    const daysAgo = Math.floor(rand() * 30)
-    const hour = Math.floor(rand() * 24)
-    const minute = Math.floor(rand() * 60)
-    const startedAt = new Date(now)
-    startedAt.setDate(startedAt.getDate() - daysAgo)
-    startedAt.setHours(hour, minute, 0, 0)
-
-    const durationMinutes = 25 + Math.floor(rand() * 66)
-    sessions.push({ startedAt, durationMinutes })
-  }
-
-  return sessions
 }
 
 export type TimeBlockAggregate = {

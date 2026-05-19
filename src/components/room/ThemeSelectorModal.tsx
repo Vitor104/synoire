@@ -229,7 +229,19 @@ export function ThemeSelectorModal({
                   })}
                 </ul>
               ) : (
-                <motion.div className="space-y-4">
+                <div className="relative space-y-4">
+                  {!hasGlowAccess && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-night/50 backdrop-blur-[2px]">
+                      <LockIcon className="h-6 w-6 text-firefly/80" />
+                      <button
+                        type="button"
+                        className="rounded-lg border border-firefly/30 px-4 py-2 text-sm font-medium text-firefly transition hover:bg-firefly/10"
+                        onClick={triggerPaywall}
+                      >
+                        Desbloquear musica com Glow
+                      </button>
+                    </div>
+                  )}
                   <label className="block text-sm text-secondary">
                     Cole o link do Spotify ou YouTube
                     <input
@@ -290,7 +302,7 @@ export function ThemeSelectorModal({
                       (YouTube/Spotify).
                     </p>
                   )}
-                </motion.div>
+                </div>
               )}
             </motion.div>
 

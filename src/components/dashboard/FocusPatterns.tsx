@@ -8,13 +8,16 @@ import {
   YAxis,
 } from 'recharts'
 import { GlowLockedOverlay } from '@/components/premium/GlowLockedOverlay'
-import { useStudySessions } from '@/hooks/useStudySessions'
 import { aggregateByTimeBlock } from '@/lib/dashboard/focusPatterns'
 import { toSessionPoints } from '@/lib/dashboard/studyAnalytics'
+import type { StudySessionView } from '@/lib/studySessions'
 
-export function FocusPatterns() {
-  const { sessions, isLoading } = useStudySessions()
+type FocusPatternsProps = {
+  sessions: StudySessionView[]
+  isLoading: boolean
+}
 
+export function FocusPatterns({ sessions, isLoading }: FocusPatternsProps) {
   const stats = useMemo(() => {
     const points = toSessionPoints(sessions)
     if (points.length === 0) return null
@@ -24,8 +27,8 @@ export function FocusPatterns() {
   if (isLoading) {
     return (
       <section className="rounded-2xl border border-white/5 bg-panel p-6">
-        <h2 className="text-sm font-medium text-primary">Inteligência de Foco</h2>
-        <p className="mt-4 text-sm text-secondary">Carregando padrões de foco…</p>
+        <h2 className="text-sm font-medium text-primary">Inteligencia de Foco</h2>
+        <p className="mt-4 text-sm text-secondary">Carregando padroes de foco…</p>
       </section>
     )
   }
@@ -33,9 +36,9 @@ export function FocusPatterns() {
   if (!stats) {
     return (
       <section className="rounded-2xl border border-white/5 bg-panel p-6">
-        <h2 className="text-sm font-medium text-primary">Inteligência de Foco</h2>
+        <h2 className="text-sm font-medium text-primary">Inteligencia de Foco</h2>
         <p className="mt-4 text-sm text-secondary">
-          Estude em uma sala para ver seus horários ideais de foco.
+          Estude em uma sala para ver seus horarios ideais de foco.
         </p>
       </section>
     )
@@ -45,12 +48,12 @@ export function FocusPatterns() {
 
   return (
     <section className="rounded-2xl border border-white/5 bg-panel p-6">
-      <h2 className="text-sm font-medium text-primary">Inteligência de Foco</h2>
+      <h2 className="text-sm font-medium text-primary">Inteligencia de Foco</h2>
       <GlowLockedOverlay className="mt-4">
         <p className="text-sm leading-relaxed text-secondary">
-          Seu pico de produtividade é à{' '}
-          <span className="font-semibold text-firefly">{peakLabel}</span>. Você rende{' '}
-          {boostPercent}% mais neste período.
+          Seu pico de produtividade e a{' '}
+          <span className="font-semibold text-firefly">{peakLabel}</span>. Voce rende{' '}
+          {boostPercent}% mais neste periodo.
         </p>
         <div className="mt-6 h-[200px] w-full">
           <ResponsiveContainer width="100%" height="100%">
