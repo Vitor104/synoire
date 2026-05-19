@@ -25,7 +25,7 @@ function toPartnerEntry(
 export function usePartnerPresence(
   partnerUserIds: string[],
 ): Map<string, PartnerPresenceEntry> {
-  const { presenceByUserId } = useGlobalPresence()
+  const { presenceByUserId, presenceVersion } = useGlobalPresence()
   const idsKey = partnerUserIds.join(',')
 
   return useMemo(() => {
@@ -35,6 +35,5 @@ export function usePartnerPresence(
       map.set(id, toPartnerEntry(presenceByUserId.get(id)))
     }
     return map
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- stable map per id set + presence snapshot
-  }, [idsKey, presenceByUserId])
+  }, [idsKey, partnerUserIds, presenceByUserId, presenceVersion])
 }

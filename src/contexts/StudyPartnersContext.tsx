@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { AppToast } from '@/components/ui/AppToast'
 import { useAuth } from '@/contexts/AuthContext'
+import { useGlobalPresence } from '@/contexts/GlobalPresenceContext'
 import { usePartnerPresence } from '@/hooks/usePartnerPresence'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import {
@@ -52,11 +53,12 @@ export function StudyPartnersProvider({ children }: { children: ReactNode }) {
     () => partnerships.map((p) => p.partnerUserId),
     [partnerships],
   )
+  const { presenceVersion } = useGlobalPresence()
   const presence = usePartnerPresence(partnerUserIds)
 
   const lists = useMemo(
     () => buildPartnerLists(partnerships, enrichment, presence),
-    [partnerships, enrichment, presence],
+    [partnerships, enrichment, presence, presenceVersion],
   )
 
   const applyRealtimeSideEffects = useCallback((result: ApplyPartnershipRealtimeResult) => {

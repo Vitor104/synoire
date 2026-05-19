@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -18,6 +19,8 @@ import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 
 type GlobalPresenceContextValue = {
   presenceByUserId: Map<string, GlobalPresencePayload>
+  /** Bumps on every presence sync so consumers re-render reliably. */
+  presenceVersion: number
   trackPresence: (payload: Omit<GlobalPresencePayload, 'user_id'>) => void
 }
 
@@ -28,18 +31,26 @@ export function GlobalPresenceProvider({ children }: { children: ReactNode }) {
   const [presenceByUserId, setPresenceByUserId] = useState(
     () => new Map<string, GlobalPresencePayload>(),
   )
+  const [presenceVersion, setPresenceVersion] = useState(0)
   const channelRef = useRef<ReturnType<NonNullable<ReturnType<typeof getSupabase>>['channel']> | null>(
     null,
   )
   const subscribedRef = useRef(false)
   const pendingTrackRef = useRef<Omit<GlobalPresencePayload, 'user_id'> | null>(null)
 
-  const syncPresence = useCallback(() => {
+  const applyPresenceState = useCallback(() => {
     const channel = channelRef.current
     if (!channel) return
     const state = channel.presenceState() as Record<string, unknown[]>
     setPresenceByUserId(parseGlobalPresenceState(state))
+    setPresenceVersion((v) => v + 1)
   }, [])
+
+  const schedulePresenceSync = useCallback(() => {
+    queueMicrotask(() => {
+      applyPresenceState()
+    })
+  }, [applyPresenceState])
 
   const trackPresence = useCallback(
     (payload: Omit<GlobalPresencePayload, 'user_id'>) => {
@@ -47,17 +58,22 @@ export function GlobalPresenceProvider({ children }: { children: ReactNode }) {
       pendingTrackRef.current = payload
       const channel = channelRef.current
       if (!channel || !subscribedRef.current) return
-      void channel.track({
-        user_id: user.id,
-        ...payload,
-      })
+      void channel
+        .track({
+          user_id: user.id,
+          ...payload,
+        })
+        .then(() => {
+          schedulePresenceSync()
+        })
     },
-    [user?.id],
+    [user?.id, schedulePresenceSync],
   )
 
   useEffect(() => {
     if (!user?.id || isDemoMode || !isSupabaseConfigured) {
       setPresenceByUserId(new Map())
+      setPresenceVersion(0)
       channelRef.current = null
       subscribedRef.current = false
       pendingTrackRef.current = null
@@ -74,9 +90,9 @@ export function GlobalPresenceProvider({ children }: { children: ReactNode }) {
     subscribedRef.current = false
 
     channel
-      .on('presence', { event: 'sync' }, syncPresence)
-      .on('presence', { event: 'join' }, syncPresence)
-      .on('presence', { event: 'leave' }, syncPresence)
+      .on('presence', { event: 'sync' }, schedulePresenceSync)
+      .on('presence', { event: 'join' }, schedulePresenceSync)
+      .on('presence', { event: 'leave' }, schedulePresenceSync)
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           subscribedRef.current = true
@@ -87,7 +103,7 @@ export function GlobalPresenceProvider({ children }: { children: ReactNode }) {
               ...pending,
             })
           }
-          syncPresence()
+          applyPresenceState()
         }
       })
 
@@ -104,13 +120,18 @@ export function GlobalPresenceProvider({ children }: { children: ReactNode }) {
       void supabase.removeChannel(channel)
       channelRef.current = null
       setPresenceByUserId(new Map())
+      setPresenceVersion(0)
     }
-  }, [user?.id, syncPresence])
+  }, [user?.id, applyPresenceState, schedulePresenceSync])
 
-  const value: GlobalPresenceContextValue = {
-    presenceByUserId,
-    trackPresence,
-  }
+  const value = useMemo(
+    (): GlobalPresenceContextValue => ({
+      presenceByUserId,
+      presenceVersion,
+      trackPresence,
+    }),
+    [presenceByUserId, presenceVersion, trackPresence],
+  )
 
   return (
     <GlobalPresenceContext.Provider value={value}>{children}</GlobalPresenceContext.Provider>
