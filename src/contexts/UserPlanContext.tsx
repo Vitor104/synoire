@@ -16,12 +16,20 @@ import {
 import { hasGlowAccess, isPlanTier, type PlanTier } from '@/lib/plan/types'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 
+const GLOW_ACTIVATION_POLL_ATTEMPTS = 10
+const GLOW_ACTIVATION_POLL_INTERVAL_MS = 2000
+
 type UserPlanContextValue = {
   planTier: PlanTier
   isLoading: boolean
   hasGlowAccess: boolean
   setPlanTier: (tier: PlanTier) => void
   refreshPlanTier: (options?: { clearDevOverride?: boolean }) => Promise<void>
+  waitForGlowActivation: (options?: {
+    clearDevOverride?: boolean
+    maxAttempts?: number
+    intervalMs?: number
+  }) => Promise<boolean>
   paywallOpen: boolean
   paywallMessage: string | null
   openPaywall: (message?: string) => void
@@ -80,6 +88,38 @@ export function UserPlanProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const waitForGlowActivation = useCallback(
+    async (options?: {
+      clearDevOverride?: boolean
+      maxAttempts?: number
+      intervalMs?: number
+    }) => {
+      if (options?.clearDevOverride) {
+        clearDevPlanTier()
+      }
+
+      const maxAttempts = options?.maxAttempts ?? GLOW_ACTIVATION_POLL_ATTEMPTS
+      const intervalMs = options?.intervalMs ?? GLOW_ACTIVATION_POLL_INTERVAL_MS
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const tier = await fetchPlanTierFromDb()
+          setPlanTierState(tier)
+          if (hasGlowAccess(tier)) return true
+        } catch {
+          setPlanTierState('free')
+        }
+
+        if (attempt < maxAttempts - 1) {
+          await new Promise((resolve) => setTimeout(resolve, intervalMs))
+        }
+      }
+
+      return false
+    },
+    [],
+  )
+
   useEffect(() => {
     let cancelled = false
 
@@ -131,6 +171,7 @@ export function UserPlanProvider({ children }: { children: ReactNode }) {
       hasGlowAccess: hasGlowAccess(planTier),
       setPlanTier,
       refreshPlanTier,
+      waitForGlowActivation,
       paywallOpen,
       paywallMessage,
       openPaywall,
@@ -141,6 +182,7 @@ export function UserPlanProvider({ children }: { children: ReactNode }) {
       isLoading,
       setPlanTier,
       refreshPlanTier,
+      waitForGlowActivation,
       paywallOpen,
       paywallMessage,
       openPaywall,

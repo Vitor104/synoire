@@ -35,8 +35,12 @@ Template local: [`functions/.env.example`](functions/.env.example) → copiar pa
 
 ```bash
 supabase functions deploy create-checkout
-supabase functions deploy stripe-webhook
+supabase functions deploy stripe-webhook --no-verify-jwt
 ```
+
+O webhook **precisa** de `--no-verify-jwt`: o Stripe não envia JWT do Supabase. Sem isso, o gateway retorna `401 UNAUTHORIZED_NO_AUTH_HEADER` e o `plan_tier` nunca é atualizado.
+
+Após o deploy, confirme no Dashboard (Edge Functions → `stripe-webhook`) que **Verify JWT** está desligado. O mesmo vale para deploy via MCP: use `verify_jwt: false`.
 
 ### Webhook Stripe
 
@@ -44,3 +48,5 @@ supabase functions deploy stripe-webhook
 2. URL: `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`  
 3. Eventos: `checkout.session.completed`, `customer.subscription.deleted`  
 4. Copiar **Signing secret** → secret `STRIPE_WEBHOOK_SECRET`
+
+Se o webhook falhou com 401 antes da correção, reenvie o evento `checkout.session.completed` em **Recent deliveries** → **Resend** (após deploy com JWT desligado). Pagamentos já concluídos podem exigir esse reenvio para preencher `stripe_subscription_id` no perfil.

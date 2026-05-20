@@ -39,7 +39,9 @@ Deno.serve(async (req) => {
     return new Response(`Webhook Error: ${message}`, { status: 400 })
   }
 
-  const admin = createClient(supabaseUrl, serviceRoleKey)
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
 
   try {
     switch (event.type) {

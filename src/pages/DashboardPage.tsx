@@ -46,7 +46,7 @@ function MetricColumn({
 
 export function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { refreshPlanTier } = useUserPlan()
+  const { waitForGlowActivation } = useUserPlan()
   const [toast, setToast] = useState({ message: '', visible: false })
   const paymentHandledRef = useRef(false)
   const reduced = usePrefersReducedMotion()
@@ -59,12 +59,16 @@ export function DashboardPage() {
     paymentHandledRef.current = true
 
     if (payment === 'success') {
-      void refreshPlanTier({ clearDevOverride: true })
-      setToast({
-        message:
-          'Bem-vindo ao Synoire Glow! Seus recursos premium foram ativados.',
-        visible: true,
-      })
+      void (async () => {
+        const activated = await waitForGlowActivation({ clearDevOverride: true })
+        setToast({
+          message:
+            activated ?
+              'Bem-vindo ao Synoire Glow! Seus recursos premium foram ativados.'
+            : 'Pagamento recebido. A ativação pode levar alguns instantes — atualize a página em breve.',
+          visible: true,
+        })
+      })()
     } else {
       setToast({
         message: 'O pagamento não foi concluído. Você pode tentar novamente quando quiser.',
@@ -73,7 +77,7 @@ export function DashboardPage() {
     }
 
     setSearchParams({}, { replace: true })
-  }, [searchParams, setSearchParams, refreshPlanTier])
+  }, [searchParams, setSearchParams, waitForGlowActivation])
   const c = pageStaggerContainer(reduced)
   const item = pageStaggerItem(reduced)
   const listInner = pageStaggerListInner(reduced)
