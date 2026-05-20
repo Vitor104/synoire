@@ -22,3 +22,12 @@ export function writeDevPlanTier(tier: PlanTier): void {
     // quota or private mode
   }
 }
+
+export function clearDevPlanTier(): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.removeItem(DEV_PLAN_TIER_KEY)
+  } catch {
+    // private mode
+  }
+}

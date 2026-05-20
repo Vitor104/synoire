@@ -1,4 +1,7 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { AppToast } from '@/components/ui/AppToast'
+import { useUserPlan } from '@/contexts/UserPlanContext'
 import { motion, type Variants } from 'motion/react'
 import { EvolutionTrails } from '@/components/dashboard/EvolutionTrails'
 import { FocusPatterns } from '@/components/dashboard/FocusPatterns'
@@ -42,7 +45,35 @@ function MetricColumn({
 }
 
 export function DashboardPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { refreshPlanTier } = useUserPlan()
+  const [toast, setToast] = useState({ message: '', visible: false })
+  const paymentHandledRef = useRef(false)
   const reduced = usePrefersReducedMotion()
+
+  useEffect(() => {
+    if (paymentHandledRef.current) return
+    const payment = searchParams.get('payment')
+    if (payment !== 'success' && payment !== 'cancelled') return
+
+    paymentHandledRef.current = true
+
+    if (payment === 'success') {
+      void refreshPlanTier({ clearDevOverride: true })
+      setToast({
+        message:
+          'Bem-vindo ao Synoire Glow! Seus recursos premium foram ativados.',
+        visible: true,
+      })
+    } else {
+      setToast({
+        message: 'O pagamento não foi concluído. Você pode tentar novamente quando quiser.',
+        visible: true,
+      })
+    }
+
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams, refreshPlanTier])
   const c = pageStaggerContainer(reduced)
   const item = pageStaggerItem(reduced)
   const listInner = pageStaggerListInner(reduced)
@@ -207,6 +238,12 @@ export function DashboardPage() {
       <motion.section variants={item} className="mt-6">
         <EvolutionTrails />
       </motion.section>
+
+      <AppToast
+        message={toast.message}
+        visible={toast.visible}
+        onDismiss={() => setToast((t) => ({ ...t, visible: false }))}
+      />
     </motion.div>
   )
 }

@@ -1,8 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { CheckIcon } from '@/components/premium/CheckIcon'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { createGlowCheckout } from '@/lib/billing/createGlowCheckout'
+import { getStripe } from '@/lib/stripe/publicKey'
 import {
   pageStaggerContainer,
   pageStaggerItem,
@@ -20,9 +22,14 @@ const BENEFITS = [
 
 export function GlowPaywallModal() {
   const { paywallOpen, paywallMessage, closePaywall, setPlanTier } = useUserPlan()
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
   const prefersReducedMotion = usePrefersReducedMotion()
   const staggerC = pageStaggerContainer(prefersReducedMotion)
   const staggerItem = pageStaggerItem(prefersReducedMotion)
+
+  useEffect(() => {
+    if (paywallOpen) void getStripe()
+  }, [paywallOpen])
 
   const tryActivateGodKey = useCallback(() => {
     const key = prompt('Enter God Key:')
@@ -45,10 +52,20 @@ export function GlowPaywallModal() {
     [tryActivateGodKey],
   )
 
-  const handleUpgrade = useCallback(() => {
-    // Stripe ainda não conectado — fluxo de teste via God Key no CTA principal.
-    tryActivateGodKey()
-  }, [tryActivateGodKey])
+  const handleUpgrade = useCallback(async () => {
+    if (isCheckingOut) return
+    setIsCheckingOut(true)
+    try {
+      const result = await createGlowCheckout()
+      if (!result.ok) {
+        alert(result.message)
+        return
+      }
+      window.location.href = result.url
+    } finally {
+      setIsCheckingOut(false)
+    }
+  }, [isCheckingOut])
 
   useEffect(() => {
     if (!paywallOpen) return
@@ -106,15 +123,17 @@ export function GlowPaywallModal() {
             <motion.div variants={staggerItem} className="mt-8 flex flex-col gap-3">
               <button
                 type="button"
-                onClick={handleUpgrade}
-                className="w-full rounded-xl bg-firefly px-4 py-3 text-sm font-medium text-night hover:brightness-110"
+                onClick={() => void handleUpgrade()}
+                disabled={isCheckingOut}
+                className="w-full rounded-xl bg-firefly px-4 py-3 text-sm font-medium text-night hover:brightness-110 disabled:cursor-wait disabled:opacity-70"
               >
-                Fazer Upgrade
+                {isCheckingOut ? 'Redirecionando…' : 'Fazer Upgrade'}
               </button>
               <button
                 type="button"
                 onClick={closePaywall}
-                className="w-full rounded-xl px-4 py-2 text-sm text-gray-400 hover:text-secondary"
+                disabled={isCheckingOut}
+                className="w-full rounded-xl px-4 py-2 text-sm text-gray-400 hover:text-secondary disabled:opacity-50"
               >
                 Talvez depois
               </button>

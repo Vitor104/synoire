@@ -1,0 +1,26 @@
+# Synoire — Supabase local config (Edge Functions + migrations)
+# Docs: https://supabase.com/docs/guides/cli/config
+
+project_id = "synoire"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false

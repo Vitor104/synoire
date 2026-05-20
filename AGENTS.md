@@ -13,7 +13,7 @@ Plataforma web social de produtividade para **concurseiros**: salas de estudo em
 | Realtime  | Supabase Realtime                   |
 | Animações | Motion (`motion/react`)             |
 | Deploy    | Netlify (`netlify.toml`)            |
-| Pagamentos| Stripe (futuro; não ligado na base) |
+| Pagamentos| Stripe (teste): Edge Functions `create-checkout` / `stripe-webhook`; ver `supabase/README.md` |
 
 ## Estrutura útil
 
