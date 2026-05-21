@@ -199,7 +199,7 @@ describe('buildPartnerLists', () => {
     ['user-lucas', enrichment('user-lucas', 'lucas_pf')],
   ])
 
-  it('splits accepted into online and offline', () => {
+  it('splits accepted into offline when absent from presence', () => {
     const partnerships: MappedPartnership[] = [
       {
         id: 'ps-a',
@@ -210,11 +210,13 @@ describe('buildPartnerLists', () => {
     ]
     const lists = buildPartnerLists(partnerships, enrich)
     expect(lists.acceptedPartners).toHaveLength(1)
+    expect(lists.focusingPartners).toHaveLength(0)
     expect(lists.onlinePartners).toHaveLength(0)
     expect(lists.offlinePartners).toHaveLength(1)
+    expect(lists.offlinePartners[0]?.presenceStatus).toBe('offline')
   })
 
-  it('puts focando partners in onlinePartners with room label', () => {
+  it('puts focando partners in focusingPartners with room label', () => {
     const partnerships: MappedPartnership[] = [
       {
         id: 'ps-a',
@@ -227,6 +229,7 @@ describe('buildPartnerLists', () => {
       [
         PARTNER,
         {
+          presenceStatus: 'focando' as const,
           isOnline: true,
           roomId: 'room-1',
           roomLabel: 'Informática • 50/10',
@@ -234,12 +237,13 @@ describe('buildPartnerLists', () => {
       ],
     ])
     const lists = buildPartnerLists(partnerships, enrich, presence)
-    expect(lists.onlinePartners).toHaveLength(1)
-    expect(lists.onlinePartners[0]?.currentRoomLabel).toBe('Informática • 50/10')
+    expect(lists.focusingPartners).toHaveLength(1)
+    expect(lists.focusingPartners[0]?.currentRoomLabel).toBe('Informática • 50/10')
+    expect(lists.onlinePartners).toHaveLength(0)
     expect(lists.offlinePartners).toHaveLength(0)
   })
 
-  it('keeps platform-online but not focando partners in offline', () => {
+  it('puts platform-online partners in onlinePartners', () => {
     const partnerships: MappedPartnership[] = [
       {
         id: 'ps-a',
@@ -249,11 +253,20 @@ describe('buildPartnerLists', () => {
       },
     ]
     const presence = new Map([
-      [PARTNER, { isOnline: false, roomId: null, roomLabel: null }],
+      [
+        PARTNER,
+        {
+          presenceStatus: 'online' as const,
+          isOnline: true,
+          roomId: null,
+          roomLabel: null,
+        },
+      ],
     ])
     const lists = buildPartnerLists(partnerships, enrich, presence)
-    expect(lists.onlinePartners).toHaveLength(0)
-    expect(lists.offlinePartners).toHaveLength(1)
+    expect(lists.focusingPartners).toHaveLength(0)
+    expect(lists.onlinePartners).toHaveLength(1)
+    expect(lists.offlinePartners).toHaveLength(0)
   })
 
   it('separates incoming and outgoing invites', () => {

@@ -28,7 +28,10 @@ export type PartnerProfileEnrichment = {
   currentStreak: number
 }
 
+export type PartnerPresenceStatus = 'offline' | 'online' | 'focando'
+
 export type PartnerPresenceEntry = {
+  presenceStatus: PartnerPresenceStatus
   isOnline: boolean
   roomId: string | null
   roomLabel: string | null
@@ -40,6 +43,7 @@ export type StudyPartnerView = {
   displayName: string
   avatarUrl: string
   currentStreak: number
+  presenceStatus: PartnerPresenceStatus
   isOnline: boolean
   currentRoomLabel: string | null
   currentRoomId: string | null
@@ -49,6 +53,7 @@ export type StudyPartnerView = {
 
 export type PartnerLists = {
   acceptedPartners: StudyPartnerView[]
+  focusingPartners: StudyPartnerView[]
   onlinePartners: StudyPartnerView[]
   offlinePartners: StudyPartnerView[]
   incomingInvites: StudyPartnerView[]

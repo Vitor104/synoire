@@ -8,18 +8,38 @@ function toPartnerEntry(
   global: { status: string; current_room: string | null; room_id: string | null } | undefined,
 ): PartnerPresenceEntry {
   if (!global) {
-    return { isOnline: false, roomId: null, roomLabel: null }
+    return {
+      presenceStatus: 'offline',
+      isOnline: false,
+      roomId: null,
+      roomLabel: null,
+    }
   }
 
   if (global.status === 'focando') {
     return {
+      presenceStatus: 'focando',
       isOnline: true,
       roomId: global.room_id,
       roomLabel: global.current_room,
     }
   }
 
-  return { isOnline: false, roomId: null, roomLabel: null }
+  if (global.status === 'online') {
+    return {
+      presenceStatus: 'online',
+      isOnline: true,
+      roomId: null,
+      roomLabel: null,
+    }
+  }
+
+  return {
+    presenceStatus: 'offline',
+    isOnline: false,
+    roomId: null,
+    roomLabel: null,
+  }
 }
 
 export function usePartnerPresence(

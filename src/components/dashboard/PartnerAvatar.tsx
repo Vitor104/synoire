@@ -12,14 +12,21 @@ export function PartnerAvatar({
   partner,
   className = 'h-9 w-9',
   showPresenceIndicator = false,
+  presenceIndicator,
 }: {
   partner: Pick<StudyPartnerView, 'displayName' | 'avatarUrl'>
   className?: string
+  /** @deprecated Prefer presenceIndicator */
   showPresenceIndicator?: boolean
+  presenceIndicator?: 'focando' | 'online'
 }) {
-  const indicator = showPresenceIndicator ? (
+  const indicatorKind =
+    presenceIndicator ?? (showPresenceIndicator ? 'focando' : undefined)
+  const indicator = indicatorKind ? (
     <span
-      className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-panel bg-firefly"
+      className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-panel ${
+        indicatorKind === 'online' ? 'bg-emerald-400' : 'bg-firefly'
+      }`}
       aria-hidden
     />
   ) : null

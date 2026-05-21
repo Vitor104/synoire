@@ -41,7 +41,7 @@ function OnlinePartnerRow({
   return (
     <li className="group relative rounded-xl border border-transparent px-2 py-2.5 transition hover:border-white/5 hover:bg-white/[0.03]">
       <div className="flex items-start gap-3">
-        <PartnerAvatar partner={partner} showPresenceIndicator />
+        <PartnerAvatar partner={partner} presenceIndicator="focando" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="truncate text-sm font-medium text-primary">
@@ -66,6 +66,18 @@ function OnlinePartnerRow({
           {isJoining ? 'Verificando…' : 'Entrar na Sala'}
         </button>
       )}
+    </li>
+  )
+}
+
+function IdleOnlinePartnerRow({ partner }: { partner: StudyPartnerView }) {
+  return (
+    <li className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition hover:border-white/5 hover:bg-white/[0.03]">
+      <PartnerAvatar partner={partner} className="h-8 w-8" presenceIndicator="online" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-primary">{partner.displayName}</p>
+      </div>
+      <StreakBadge days={partner.currentStreak} />
     </li>
   )
 }
@@ -205,6 +217,7 @@ export function StudyPartnersSidebar({
   const navigate = useNavigate()
   const { user } = useAuth()
   const {
+    focusingPartners,
     onlinePartners,
     offlinePartners,
     incomingInvites,
@@ -384,18 +397,31 @@ export function StudyPartnersSidebar({
               <Section
                 title="Focando agora"
                 empty={
-                  onlinePartners.length === 0
+                  focusingPartners.length === 0
                     ? 'Nenhum parceiro estudando no momento.'
                     : undefined
                 }
               >
-                {onlinePartners.map((p) => (
+                {focusingPartners.map((p) => (
                   <OnlinePartnerRow
                     key={p.partnershipId}
                     partner={p}
                     onJoinRoom={(roomId, name) => void handleJoinRoom(roomId, name)}
                     joiningRoomId={joiningRoomId}
                   />
+                ))}
+              </Section>
+
+              <Section
+                title="Online"
+                empty={
+                  onlinePartners.length === 0
+                    ? 'Nenhum parceiro online no momento.'
+                    : undefined
+                }
+              >
+                {onlinePartners.map((p) => (
+                  <IdleOnlinePartnerRow key={p.partnershipId} partner={p} />
                 ))}
               </Section>
 

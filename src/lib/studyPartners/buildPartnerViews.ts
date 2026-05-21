@@ -15,6 +15,7 @@ function toView(
   if (!profile) return null
 
   const presenceEntry = presence.get(partnership.partnerUserId)
+  const presenceStatus = presenceEntry?.presenceStatus ?? 'offline'
 
   return {
     id: profile.id,
@@ -22,7 +23,8 @@ function toView(
     displayName: profile.displayName,
     avatarUrl: profile.avatarUrl,
     currentStreak: profile.currentStreak,
-    isOnline: presenceEntry?.isOnline ?? false,
+    presenceStatus,
+    isOnline: presenceStatus !== 'offline',
     currentRoomLabel: presenceEntry?.roomLabel ?? null,
     currentRoomId: presenceEntry?.roomId ?? null,
     partnershipStatus: partnership.status,
@@ -40,13 +42,15 @@ export function buildPartnerLists(
     .filter((v): v is StudyPartnerView => v !== null)
 
   const acceptedPartners = views.filter((v) => v.partnershipStatus === 'accepted')
-  const onlinePartners = acceptedPartners.filter((v) => v.isOnline)
-  const offlinePartners = acceptedPartners.filter((v) => !v.isOnline)
+  const focusingPartners = acceptedPartners.filter((v) => v.presenceStatus === 'focando')
+  const onlinePartners = acceptedPartners.filter((v) => v.presenceStatus === 'online')
+  const offlinePartners = acceptedPartners.filter((v) => v.presenceStatus === 'offline')
   const incomingInvites = views.filter((v) => v.partnershipStatus === 'pending_incoming')
   const outgoingInvites = views.filter((v) => v.partnershipStatus === 'pending_outgoing')
 
   return {
     acceptedPartners,
+    focusingPartners,
     onlinePartners,
     offlinePartners,
     incomingInvites,
