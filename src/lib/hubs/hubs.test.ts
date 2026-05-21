@@ -54,6 +54,18 @@ describe('mapHubRow', () => {
     })
     expect(view.isPrivate).toBe(true)
     expect(view.shortLabel).toBe('Privado')
+    expect(view.creatorId).toBe('u1')
+  })
+
+  it('maps null creator_id', () => {
+    const view = mapHubRow({
+      id: 'h3',
+      name: 'Public',
+      slug: 'public',
+      is_private: false,
+      creator_id: null,
+    })
+    expect(view.creatorId).toBeNull()
   })
 })
 

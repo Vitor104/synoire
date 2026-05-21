@@ -21,7 +21,7 @@ export async function createPrivateHub(
 
   if (isDemoMode) {
     await new Promise((resolve) => setTimeout(resolve, 300))
-    const hub = buildPrivateHub(name, input.iconEmoji, existingSlugs)
+    const hub = buildPrivateHub(name, input.iconEmoji, existingSlugs, input.creatorId)
     appendPrivateHub(hub)
     const demo = getDemoHubs().find((h) => h.slug === hub.slug)
     return {

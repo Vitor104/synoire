@@ -14,6 +14,7 @@ export function buildPrivateHub(
   name: string,
   iconEmoji?: string,
   existingSlugs: string[] = [],
+  creatorId?: string,
 ): HubView {
   const base = slugifyName(name)
   let slug = `privado-${base}`
@@ -32,5 +33,6 @@ export function buildPrivateHub(
     accentBadge: 'border-firefly/40 bg-firefly/10 text-firefly',
     isPrivate: true,
     iconEmoji,
+    creatorId: creatorId ?? null,
   }
 }

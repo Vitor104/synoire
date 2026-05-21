@@ -21,7 +21,7 @@ export function getDemoHubs(): HubView[] {
     name: h.name,
     slug: h.slug,
     is_private: true,
-    creator_id: null,
+    creator_id: h.creatorId ?? null,
     icon_emoji: h.iconEmoji ?? null,
   }))
   return [...DEMO_HUB_ROWS, ...privateRows].map(mapHubRow)

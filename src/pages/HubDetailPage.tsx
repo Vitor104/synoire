@@ -2,7 +2,10 @@ import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CreateRoomModal } from '@/components/hub/CreateRoomModal'
+import { InviteToHubModal } from '@/components/hub/InviteToHubModal'
 import { HubRoomList } from '@/components/hub/HubRoomList'
+import { useAuth } from '@/contexts/AuthContext'
+import { useStudyPartners } from '@/contexts/StudyPartnersContext'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { useHubRooms } from '@/hooks/useHubRooms'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
@@ -21,9 +24,12 @@ export function HubDetailPage() {
   const c = pageStaggerContainer(reduced)
   const item = pageStaggerItem(reduced)
 
+  const { user } = useAuth()
+  const { acceptedPartners } = useStudyPartners()
   const { openPaywall } = useUserPlan()
   const { rooms, isLoading, error, createRoom } = useHubRooms(slug)
   const [createOpen, setCreateOpen] = useState(false)
+  const [inviteHubOpen, setInviteHubOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
@@ -123,13 +129,30 @@ export function HubDetailPage() {
         </Link>
       </motion.div>
       <motion.header variants={item} className="mt-6">
-        <motion.div variants={item} className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold text-primary">{hub.name}</h1>
-          {hub.isPrivate && (
-            <span className="rounded-md border border-firefly/40 bg-firefly/10 px-2 py-0.5 text-xs font-semibold text-firefly">
-              Hub Privado
-            </span>
-          )}
+        <motion.div
+          variants={item}
+          className="flex flex-wrap items-center justify-between gap-3"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold text-primary">{hub.name}</h1>
+            {hub.isPrivate && (
+              <span className="rounded-md border border-firefly/40 bg-firefly/10 px-2 py-0.5 text-xs font-semibold text-firefly">
+                Hub Privado
+              </span>
+            )}
+          </div>
+          {hub.isPrivate &&
+            user?.id &&
+            hub.creatorId &&
+            user.id === hub.creatorId && (
+              <button
+                type="button"
+                onClick={() => setInviteHubOpen(true)}
+                className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-firefly hover:bg-elevated"
+              >
+                Convidar Membros
+              </button>
+            )}
         </motion.div>
         <p className="mt-2 text-sm text-secondary">
           Salas de foco criadas por estudantes neste hub. Salas vazias por mais
@@ -167,6 +190,19 @@ export function HubDetailPage() {
         prefersReducedMotion={reduced}
         isSubmitting={isSubmitting}
       />
+
+      {hub.isPrivate &&
+        user?.id &&
+        hub.creatorId &&
+        user.id === hub.creatorId && (
+          <InviteToHubModal
+            open={inviteHubOpen}
+            onClose={() => setInviteHubOpen(false)}
+            hubId={hub.id}
+            partners={acceptedPartners}
+            prefersReducedMotion={reduced}
+          />
+        )}
     </motion.div>
   )
 }

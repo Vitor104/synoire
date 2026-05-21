@@ -8,6 +8,7 @@ export type HubView = {
   accentBadge: string
   isPrivate?: boolean
   iconEmoji?: string
+  creatorId?: string | null
 }
 
 /** @deprecated Use HubView — kept for gradual migration */

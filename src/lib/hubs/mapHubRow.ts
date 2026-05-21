@@ -73,5 +73,6 @@ export function mapHubRow(row: HubRow): HubView {
     accentBadge: palette.accentBadge,
     isPrivate: isPrivate || undefined,
     iconEmoji: row.icon_emoji?.trim() || undefined,
+    creatorId: row.creator_id ?? null,
   }
 }
