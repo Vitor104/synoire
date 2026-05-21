@@ -1,4 +1,10 @@
+export { computePartialMinutes } from './computePartialMinutes'
 export { getUserStats } from './getUserStats'
+export {
+  fetchStudySessionById,
+  recordPartialStudyTime,
+  type RecordStudyTimeResult,
+} from './recordPartialStudyTime'
 export { needsWeeklyGoalOnboarding } from './needsWeeklyGoalOnboarding'
 export { updateWeeklyGoalMinutes } from './updateWeeklyGoalMinutes'
 export {

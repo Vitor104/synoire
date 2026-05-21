@@ -6,7 +6,7 @@ import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { hasRoomAccess as hasLocalAccess } from './storage'
 
 async function fetchRoom(roomId: string): Promise<StudyRoom | null> {
-  if (!isSupabaseConfigured || isDemoMode()) {
+  if (!isSupabaseConfigured || isDemoMode) {
     return mockHubRoomsAdapter.getRoom(roomId)
   }
   const result = await getRoomById(roomId)

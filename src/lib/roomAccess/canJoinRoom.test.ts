@@ -12,7 +12,7 @@ vi.mock('@/lib/hubRooms/getRoomById', () => ({
 }))
 
 vi.mock('@/lib/hubRooms/demo', () => ({
-  isDemoMode: () => false,
+  isDemoMode: false,
 }))
 
 vi.mock('@/lib/supabase', () => ({

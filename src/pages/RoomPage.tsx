@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ImmersiveCanvas } from '@/components/room/ImmersiveCanvas'
 import { PreRoomLounge } from '@/components/room/PreRoomLounge'
 import { RoomChat, RoomChatToggleButton } from '@/components/room/RoomChat'
@@ -13,6 +13,7 @@ import { useStudyPartners } from '@/contexts/StudyPartnersContext'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { useGlobalRoomTimer } from '@/hooks/useGlobalRoomTimer'
 import { useImmersiveTheme } from '@/hooks/useImmersiveTheme'
+import { usePartialStudyTracking } from '@/hooks/usePartialStudyTracking'
 import { useRecordStudySession } from '@/hooks/useRecordStudySession'
 import { useStudySessions } from '@/hooks/useStudySessions'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
@@ -66,6 +67,7 @@ function roomEntrySubtitle(status: RoomEntryStatus): string {
 export function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const location = useLocation()
+  const navigate = useNavigate()
   const { room: studyRoom, entryStatus, entryMessage } = useRoomEntry(roomId)
   const title = useMemo(
     () =>
@@ -100,6 +102,21 @@ export function RoomPage() {
     initialSessionMode(location.state),
   )
 
+  const { resetJoinTime, handleLeaveRoom, isLeaving } = usePartialStudyTracking({
+    roomId,
+    userId: user?.id,
+    sessionMode,
+  })
+
+  const recordSessionWithReset = useCallback(
+    async (targetRoomId: string, durationMinutes: number) => {
+      const result = await recordSession(targetRoomId, durationMinutes)
+      if (result.ok) resetJoinTime()
+      return result
+    },
+    [recordSession, resetJoinTime],
+  )
+
   useRecordStudySession({
     roomId,
     studyRoom,
@@ -108,8 +125,13 @@ export function RoomPage() {
     isIdle,
     isSegmentComplete,
     startedAt,
-    recordSession,
+    recordSession: recordSessionWithReset,
   })
+
+  const onLeaveRoom = useCallback(async () => {
+    await handleLeaveRoom()
+    navigate('/painel')
+  }, [handleLeaveRoom, navigate])
   const [syncFlashUntil, setSyncFlashUntil] = useState(0)
   const [ritualGlow, setRitualGlow] = useState(false)
   const [timerRitualFade, setTimerRitualFade] = useState(false)
@@ -438,12 +460,14 @@ export function RoomPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <Link
-            to="/painel"
-            className="pointer-events-auto rounded-lg px-3 py-2 text-sm text-secondary hover:bg-elevated hover:text-primary"
+          <button
+            type="button"
+            disabled={isLeaving}
+            onClick={() => void onLeaveRoom()}
+            className="pointer-events-auto rounded-lg px-3 py-2 text-sm text-secondary hover:bg-elevated hover:text-primary disabled:opacity-50"
           >
-            Sair
-          </Link>
+            {isLeaving ? 'Salvando…' : 'Sair'}
+          </button>
           <div className="pointer-events-auto flex items-center gap-2">
             {showInviteButton && (
               <button

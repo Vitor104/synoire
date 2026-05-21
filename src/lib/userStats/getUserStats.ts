@@ -1,4 +1,6 @@
+import { isDemoMode } from '@/lib/studySessions/demo'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
+import { getDemoUserStats } from './demoStats'
 import type { UserStatsResult, UserStatsRow, UserStatsView } from './types'
 
 function mapUserStatsRow(row: UserStatsRow): UserStatsView {
@@ -24,6 +26,18 @@ function mapQueryError(message: string): string {
 }
 
 export async function getUserStats(userId: string): Promise<UserStatsResult<UserStatsView>> {
+  if (isDemoMode) {
+    const demo = getDemoUserStats(userId)
+    return {
+      ok: true,
+      data: {
+        currentStreak: demo.currentStreak,
+        totalHours: demo.totalHours,
+        weeklyGoalMinutes: 0,
+      },
+    }
+  }
+
   if (!isSupabaseConfigured) {
     return { ok: false, message: 'Supabase não configurado.' }
   }

@@ -47,7 +47,7 @@ function shouldUseMockTimer(
 ): boolean {
   if (studyRoom) return false
   if (!roomId || roomId === 'demo') return true
-  return !isSupabaseConfigured || isDemoMode()
+  return !isSupabaseConfigured || isDemoMode
 }
 
 const safeIdleTimerState = (): RoomTimerState & { isIdle: boolean } => ({
