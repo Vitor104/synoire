@@ -1,5 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno'
+import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
+import Stripe from 'https://esm.sh/stripe@17.7.0?target=denonext'
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
   const stripe = new Stripe(stripeSecret, {
     httpClient: Stripe.createFetchHttpClient(),
   })
+  const cryptoProvider = Stripe.createSubtleCryptoProvider()
 
   let event: Stripe.Event
   try {
@@ -32,6 +33,8 @@ Deno.serve(async (req) => {
       rawBody,
       signature,
       webhookSecret,
+      undefined,
+      cryptoProvider,
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Invalid signature'

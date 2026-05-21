@@ -6,7 +6,11 @@ import { getRoomById } from './getRoomById'
 import { listRoomsByHub } from './listRoomsByHub'
 import { HubRoomError } from './HubRoomError'
 import { patchRoomTimer } from './patchRoomTimer'
-import { nextAdvancedTimerState, nextFocusTimerState } from './timerMutations'
+import {
+  catchUpTimerState,
+  nextAdvancedTimerState,
+  nextFocusTimerState,
+} from './timerMutations'
 import type { HubRoomsAdapter } from './types'
 import { filterVisibleRooms } from './utils'
 
@@ -45,9 +49,22 @@ export const supabaseHubRoomsAdapter: HubRoomsAdapter = {
     return throwOnError(result)
   },
 
+  async syncTimerCatchUp(roomId) {
+    const current = await this.getRoom(roomId)
+    if (!current) return null
+    const next = catchUpTimerState(current)
+    if (!next) return current
+    const result = await patchRoomTimer(roomId, next, current.hub_slug)
+    return throwOnError(result)
+  },
+
   async startFocusTimer(roomId) {
     const current = await this.getRoom(roomId)
     if (!current) return null
+    if (catchUpTimerState(current)) {
+      const synced = await this.syncTimerCatchUp(roomId)
+      if (synced?.current_timer_state.status === 'focus') return synced
+    }
     const next = nextFocusTimerState(current)
     if (!next) return current
     const result = await patchRoomTimer(roomId, next, current.hub_slug)
@@ -57,6 +74,9 @@ export const supabaseHubRoomsAdapter: HubRoomsAdapter = {
   async advanceTimerPhase(roomId) {
     const current = await this.getRoom(roomId)
     if (!current) return null
+    if (catchUpTimerState(current)) {
+      return this.syncTimerCatchUp(roomId)
+    }
     const next = nextAdvancedTimerState(current)
     if (!next) return current
     const result = await patchRoomTimer(roomId, next, current.hub_slug)

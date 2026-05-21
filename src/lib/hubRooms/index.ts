@@ -31,6 +31,8 @@ export {
   validateTheme,
   THEME_MAX_LENGTH,
 } from './utils'
+export { resolveTimerCatchUp, timerStatesEqual } from './resolveTimerCatchUp'
+export { catchUpTimerState } from './timerMutations'
 export { inferFocusCycle, mapRoomRow, persistedToPayload, toPersistedTimer } from './mapRoomRow'
 export { createRoomApi } from './createRoom'
 export { listRoomsByHub } from './listRoomsByHub'

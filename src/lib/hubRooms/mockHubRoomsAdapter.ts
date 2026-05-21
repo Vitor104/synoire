@@ -1,3 +1,5 @@
+import { persistedToPayload, toPersistedTimer } from './mapRoomRow'
+import { catchUpTimerState } from './timerMutations'
 import type { CreateRoomInput, HubRoomsAdapter, StudyRoom } from './types'
 import { buildCreatePayload, filterVisibleRooms, validateTheme } from './utils'
 
@@ -113,22 +115,48 @@ export const mockHubRoomsAdapter: HubRoomsAdapter = {
     return createStudyRoom(input)
   },
 
+  async syncTimerCatchUp(roomId) {
+    return mutateRoom(roomId, (room) => {
+      const next = catchUpTimerState(room)
+      if (!next) return room
+      return {
+        ...room,
+        current_timer_state: persistedToPayload(next),
+      }
+    })
+  },
+
   async startFocusTimer(roomId) {
+    const current = await this.getRoom(roomId)
+    if (!current) return null
+    if (catchUpTimerState(current)) {
+      const synced = await this.syncTimerCatchUp(roomId)
+      if (synced?.current_timer_state.status === 'focus') return synced
+    }
     return mutateRoom(roomId, (room) => {
       if (room.current_timer_state.status !== 'idle') return room
       const now = new Date().toISOString()
-      return {
-        ...room,
-        current_timer_state: {
+      const next = toPersistedTimer(
+        {
           ...room.current_timer_state,
           status: 'focus',
           started_at: now,
         },
+        room.focus_cycle,
+      )
+      return {
+        ...room,
+        current_timer_state: persistedToPayload(next),
       }
     })
   },
 
   async advanceTimerPhase(roomId) {
+    const current = await this.getRoom(roomId)
+    if (!current) return null
+    if (catchUpTimerState(current)) {
+      return this.syncTimerCatchUp(roomId)
+    }
     return mutateRoom(roomId, (room) => {
       const ts = room.current_timer_state
       if (ts.status === 'idle' || !ts.started_at) return room

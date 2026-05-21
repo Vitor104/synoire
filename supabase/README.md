@@ -64,3 +64,11 @@ Após o deploy, confirme no Dashboard (Edge Functions → `stripe-webhook`) que 
 4. Copiar **Signing secret** → secret `STRIPE_WEBHOOK_SECRET`
 
 Se o webhook falhou com 401 antes da correção, reenvie o evento `checkout.session.completed` em **Recent deliveries** → **Resend** (após deploy com JWT desligado). Pagamentos já concluídos podem exigir esse reenvio para preencher `stripe_subscription_id` no perfil.
+
+### Timer das salas (`rooms.current_timer_state`)
+
+O ciclo foco/pausa é **corrido pelo relógio** (wall-clock): o cliente deriva a fase atual com `resolveTimerCatchUp` e persiste via `syncTimerCatchUp` ao entrar na sala ou quando o estado no Postgres ficou atrás (sala vazia). Presença só dispara o sync; não pausa o timer.
+
+### Imports (Edge Runtime Deno 2)
+
+Nas funções Stripe, use `https://esm.sh/stripe@…?target=denonext` (não `?target=deno`). O alvo `deno` puxa polyfills Node incompatíveis com o runtime atual e pode gerar no log, ~1 min após a requisição, `event loop error: Deno.core.runMicrotasks() is not supported` no shutdown do isolate — isso **não** indica falha de cobrança nem impede o Glow de ativar. O webhook usa `Stripe.createSubtleCryptoProvider()` na verificação de assinatura; `@supabase/supabase-js` entra via `npm:`.

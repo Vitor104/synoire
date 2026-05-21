@@ -3,6 +3,7 @@ import { getMockRoomTimerState } from '@/data/mockRoomTimer'
 import {
   getHubRoomsAdapter,
   getPrepRemainingSeconds,
+  resolveTimerCatchUp,
   timerPayloadToCycleConfig,
   type StudyRoom,
 } from '@/lib/hubRooms'
@@ -57,14 +58,17 @@ const safeIdleTimerState = (): RoomTimerState & { isIdle: boolean } => ({
   isIdle: true,
 })
 
-function studyRoomToTimerState(room: StudyRoom): RoomTimerState & { isIdle: boolean } {
-  const ts = room.current_timer_state
-  const cycle = timerPayloadToCycleConfig(ts)
+function studyRoomToTimerState(
+  room: StudyRoom,
+  now: number,
+): RoomTimerState & { isIdle: boolean } {
+  const { resolved } = resolveTimerCatchUp(room.current_timer_state, now)
+  const cycle = timerPayloadToCycleConfig(resolved)
 
-  if (ts.status === 'idle') {
+  if (resolved.status === 'idle') {
     return {
       phase: 'focus',
-      startedAt: ts.started_at ?? new Date().toISOString(),
+      startedAt: resolved.started_at ?? new Date(now).toISOString(),
       presentCount: room.present_count,
       cycle,
       isIdle: true,
@@ -72,8 +76,8 @@ function studyRoomToTimerState(room: StudyRoom): RoomTimerState & { isIdle: bool
   }
 
   return {
-    phase: ts.status,
-    startedAt: ts.started_at!,
+    phase: resolved.status,
+    startedAt: resolved.started_at!,
     presentCount: room.present_count,
     cycle,
     isIdle: false,
@@ -98,24 +102,30 @@ export function useGlobalRoomTimer(
     setMockState(getMockRoomTimerState(roomId))
   }, [roomId, studyRoom, useMock])
 
-  const derived = useMemo(() => {
-    if (studyRoom) return studyRoomToTimerState(studyRoom)
-    if (useMock) {
-      return { ...mockState, isIdle: false, cycle: DEFAULT_CYCLE_CONFIG }
-    }
-    return safeIdleTimerState()
-  }, [studyRoom, mockState, useMock])
-
-  const config: RoomCycleConfig = derived.cycle ?? DEFAULT_CYCLE_CONFIG
-  const isIdle = derived.isIdle
-  const timerPayload = studyRoom?.current_timer_state
-
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
     const tick = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(tick)
   }, [])
+
+  const storedPayload = studyRoom?.current_timer_state
+  const catchUp = useMemo(() => {
+    if (!storedPayload) return { resolved: null as null, changed: false }
+    return resolveTimerCatchUp(storedPayload, now)
+  }, [storedPayload, now])
+
+  const derived = useMemo(() => {
+    if (studyRoom) return studyRoomToTimerState(studyRoom, now)
+    if (useMock) {
+      return { ...mockState, isIdle: false, cycle: DEFAULT_CYCLE_CONFIG }
+    }
+    return safeIdleTimerState()
+  }, [studyRoom, mockState, useMock, now])
+
+  const config: RoomCycleConfig = derived.cycle ?? DEFAULT_CYCLE_CONFIG
+  const isIdle = derived.isIdle
+  const timerPayload = catchUp.resolved ?? storedPayload
 
   const prepRemaining = useMemo(() => {
     if (!isIdle || !timerPayload) return null
@@ -156,12 +166,32 @@ export function useGlobalRoomTimer(
     await adapter.startFocusTimer(roomId)
   }, [studyRoom, roomId, adapter])
 
+  const syncTimerCatchUp = useCallback(async () => {
+    if (!studyRoom || !roomId) return
+    await adapter.syncTimerCatchUp(roomId)
+  }, [studyRoom, roomId, adapter])
+
   useEffect(() => {
     if (!studyRoom && !useMock) return
-    if (isIdle || !isComplete) return
+    if (useMock) {
+      if (isIdle || !isComplete) return
+      if (!tryClaimLeader(id)) return
+      void advancePhase()
+      return
+    }
+    if (!catchUp.changed && !isComplete) return
     if (!tryClaimLeader(id)) return
-    void advancePhase()
-  }, [isComplete, isIdle, id, advancePhase, studyRoom, useMock])
+    void syncTimerCatchUp()
+  }, [
+    catchUp.changed,
+    isComplete,
+    isIdle,
+    id,
+    advancePhase,
+    syncTimerCatchUp,
+    studyRoom,
+    useMock,
+  ])
 
   const presentCount = derived.presentCount ?? mockState.presentCount ?? 128
 

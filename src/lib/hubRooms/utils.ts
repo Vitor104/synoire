@@ -1,4 +1,5 @@
 import { getCycleDurations } from './cycles'
+import { resolveTimerCatchUp } from './resolveTimerCatchUp'
 import {
   formatTimerSeconds,
   getCyclePosition,
@@ -103,34 +104,35 @@ export function formatRoomCardTimeLabel(
   state: RoomTimerPayload,
   now: Date | number = Date.now(),
 ): string {
-  if (state.status === 'focus' && state.started_at) {
+  const { resolved } = resolveTimerCatchUp(state, now)
+  if (resolved.status === 'focus' && resolved.started_at) {
     const { isComplete } = getCyclePosition(
       now,
-      state.started_at,
+      resolved.started_at,
       'focus',
-      timerPayloadToCycleConfig(state),
+      timerPayloadToCycleConfig(resolved),
     )
     if (!isComplete) return 'Em foco agora'
   }
 
-  if (state.status === 'idle') {
-    return `Come\u00e7a em ${formatTimerSeconds(getPrepRemainingSeconds(state, now))}`
+  if (resolved.status === 'idle') {
+    return `Come\u00e7a em ${formatTimerSeconds(getPrepRemainingSeconds(resolved, now))}`
   }
 
-  if (state.status === 'break' && state.started_at) {
+  if (resolved.status === 'break' && resolved.started_at) {
     const secs = secondsUntilNextFocus(
       now,
-      { phase: 'break', startedAt: state.started_at },
-      timerPayloadToCycleConfig(state),
+      { phase: 'break', startedAt: resolved.started_at },
+      timerPayloadToCycleConfig(resolved),
     )
     return `Come\u00e7a em ${formatTimerSeconds(secs)}`
   }
 
-  if (state.status === 'focus' && state.started_at) {
+  if (resolved.status === 'focus' && resolved.started_at) {
     const secs = secondsUntilNextFocus(
       now,
-      { phase: 'focus', startedAt: state.started_at },
-      timerPayloadToCycleConfig(state),
+      { phase: 'focus', startedAt: resolved.started_at },
+      timerPayloadToCycleConfig(resolved),
     )
     return `Come\u00e7a em ${formatTimerSeconds(secs)}`
   }

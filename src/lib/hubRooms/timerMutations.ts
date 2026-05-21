@@ -1,5 +1,16 @@
 import { toPersistedTimer } from './mapRoomRow'
+import { resolveTimerCatchUp } from './resolveTimerCatchUp'
 import type { PersistedTimerState, StudyRoom } from './types'
+
+/** Wall-clock catch-up; null if persisted state is already current. */
+export function catchUpTimerState(
+  room: StudyRoom,
+  now: Date | number = Date.now(),
+): PersistedTimerState | null {
+  const { resolved, changed } = resolveTimerCatchUp(room.current_timer_state, now)
+  if (!changed) return null
+  return toPersistedTimer(resolved, room.focus_cycle)
+}
 
 export function nextFocusTimerState(room: StudyRoom): PersistedTimerState | null {
   const ts = room.current_timer_state

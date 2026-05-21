@@ -1,5 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
-import Stripe from 'https://esm.sh/stripe@17.7.0?target=deno'
+import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
+import Stripe from 'https://esm.sh/stripe@17.7.0?target=denonext'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
 import { normalizeFrontendUrl } from '../_shared/frontendUrl.ts'
 

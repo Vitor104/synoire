@@ -58,6 +58,8 @@ export type HubRoomsAdapter = {
   createRoom(input: CreateRoomInput): Promise<StudyRoom>
   startFocusTimer(roomId: string): Promise<StudyRoom | null>
   advanceTimerPhase(roomId: string): Promise<StudyRoom | null>
+  /** Persists timer state after wall-clock catch-up (empty rooms, late joiners). */
+  syncTimerCatchUp(roomId: string): Promise<StudyRoom | null>
   incrementPresence(roomId: string): Promise<void>
   decrementPresence(roomId: string): Promise<void>
   subscribe(onChange: () => void, hubSlug?: string): () => void

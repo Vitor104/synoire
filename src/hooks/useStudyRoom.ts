@@ -23,6 +23,10 @@ export function useStudyRoom(roomId: string | undefined) {
       try {
         const r = await adapter.getRoom(roomId)
         if (!cancelled) setRoom(r)
+        if (r && !cancelled) {
+          const synced = await adapter.syncTimerCatchUp(roomId)
+          if (!cancelled && synced) setRoom(synced)
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
