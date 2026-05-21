@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { LockIcon } from '@/components/premium/LockIcon'
 import { formatRoomCardTimeLabel } from '@/lib/hubRooms'
 import type { StudyRoom } from '@/lib/hubRooms'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
@@ -22,10 +23,27 @@ export function HubRoomCard({ room }: HubRoomCardProps) {
 
   return (
     <motion.article
-      className="group relative rounded-2xl border border-white/5 bg-panel p-5 transition hover:border-white/10"
+      className={`group relative rounded-2xl border bg-panel p-5 transition ${
+        room.is_private
+          ? 'border-firefly/20 hover:border-firefly/30'
+          : 'border-white/5 hover:border-white/10'
+      }`}
       whileHover={reduced ? undefined : { y: -2 }}
     >
-      <h3 className="text-base font-semibold leading-snug text-primary">{room.name}</h3>
+      {room.is_private && (
+        <LockIcon
+          className="absolute top-4 right-4 z-10 h-3.5 w-3.5 text-firefly/70"
+          aria-hidden
+        />
+      )}
+      <div className="flex items-start justify-between gap-2 pr-6">
+        <h3 className="text-base font-semibold leading-snug text-primary">{room.name}</h3>
+        {room.is_private && (
+          <span className="shrink-0 rounded-md border border-firefly/40 bg-firefly/10 px-2 py-0.5 text-xs font-semibold text-firefly">
+            Privada
+          </span>
+        )}
+      </div>
 
       <div className="mt-3 flex items-center gap-2 text-sm text-secondary">
         <span
@@ -42,7 +60,11 @@ export function HubRoomCard({ room }: HubRoomCardProps) {
       <Link
         to={`/salas/${room.id}`}
         className="absolute inset-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-firefly/50"
-        aria-label={`Entrar na sala ${room.name}`}
+        aria-label={
+          room.is_private
+            ? `Entrar na sala privada ${room.name}`
+            : `Entrar na sala ${room.name}`
+        }
       >
         <span className="sr-only">Entrar</span>
       </Link>
