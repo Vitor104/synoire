@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import { PartnerAvatar } from '@/components/dashboard/PartnerAvatar'
 import { InvitePartnerModal } from '@/components/dashboard/InvitePartnerModal'
 import { AppToast } from '@/components/ui/AppToast'
+import { useAuth } from '@/contexts/AuthContext'
 import { useRoomInvites } from '@/contexts/RoomInvitesContext'
 import { useStudyPartners } from '@/contexts/StudyPartnersContext'
+import { canJoinRoom } from '@/lib/roomAccess'
 import type { IncomingRoomInvite } from '@/lib/roomAccess'
 import type { StudyPartnerView } from '@/lib/studyPartners'
 
@@ -26,12 +28,15 @@ function StreakBadge({ days }: { days: number }) {
 function OnlinePartnerRow({
   partner,
   onJoinRoom,
+  joiningRoomId,
 }: {
   partner: StudyPartnerView
-  onJoinRoom: (roomId: string) => void
+  onJoinRoom: (roomId: string, partnerName: string) => void
+  joiningRoomId: string | null
 }) {
   const roomLabel = partner.currentRoomLabel
   const canJoin = Boolean(partner.currentRoomId && roomLabel)
+  const isJoining = joiningRoomId === partner.currentRoomId
 
   return (
     <li className="group relative rounded-xl border border-transparent px-2 py-2.5 transition hover:border-white/5 hover:bg-white/[0.03]">
@@ -54,10 +59,11 @@ function OnlinePartnerRow({
       {canJoin && (
         <button
           type="button"
-          onClick={() => onJoinRoom(partner.currentRoomId!)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg border border-firefly/30 bg-panel/95 px-2.5 py-1.5 text-[11px] font-medium text-firefly opacity-0 shadow-sm transition group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-firefly/50"
+          disabled={isJoining}
+          onClick={() => onJoinRoom(partner.currentRoomId!, partner.displayName)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg border border-firefly/30 bg-panel/95 px-2.5 py-1.5 text-[11px] font-medium text-firefly opacity-0 shadow-sm transition group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-firefly/50 disabled:opacity-60"
         >
-          Entrar na Sala
+          {isJoining ? 'Verificando…' : 'Entrar na Sala'}
         </button>
       )}
     </li>
@@ -197,6 +203,7 @@ export function StudyPartnersSidebar({
   prefersReducedMotion = false,
 }: StudyPartnersSidebarProps) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const {
     onlinePartners,
     offlinePartners,
@@ -217,6 +224,7 @@ export function StudyPartnersSidebar({
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
   const [actingId, setActingId] = useState<string | null>(null)
   const [actingRoomInviteKey, setActingRoomInviteKey] = useState<string | null>(null)
+  const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({
     message: '',
     visible: false,
@@ -227,11 +235,35 @@ export function StudyPartnersSidebar({
   }, [])
 
   const handleJoinRoom = useCallback(
-    (roomId: string) => {
-      onClose()
-      navigate(`/salas/${roomId}`)
+    async (roomId: string, partnerName: string) => {
+      if (!user?.id) {
+        showToast('Entre na sua conta para entrar na sala.')
+        return
+      }
+
+      setJoiningRoomId(roomId)
+      const result = await canJoinRoom(roomId, user.id)
+      setJoiningRoomId(null)
+
+      if (result.status === 'allowed') {
+        onClose()
+        navigate(`/salas/${roomId}`)
+        return
+      }
+
+      if (result.status === 'denied_private') {
+        showToast(`Esta sala é privada. Peça um convite a ${partnerName}.`)
+        return
+      }
+
+      if (result.status === 'not_found') {
+        showToast('Sala não encontrada ou indisponível.')
+        return
+      }
+
+      showToast(result.message || 'Não foi possível entrar na sala.')
     },
-    [navigate, onClose],
+    [navigate, onClose, showToast, user?.id],
   )
 
   const handleSendInvite = useCallback(
@@ -284,7 +316,7 @@ export function StudyPartnersSidebar({
   const handleAcceptRoomInvite = useCallback(
     (invite: IncomingRoomInvite) => {
       acceptRoomInvite(invite)
-      handleJoinRoom(invite.roomId)
+      void handleJoinRoom(invite.roomId, invite.inviterUsername)
     },
     [acceptRoomInvite, handleJoinRoom],
   )
@@ -349,7 +381,12 @@ export function StudyPartnersSidebar({
                 }
               >
                 {onlinePartners.map((p) => (
-                  <OnlinePartnerRow key={p.partnershipId} partner={p} onJoinRoom={handleJoinRoom} />
+                  <OnlinePartnerRow
+                    key={p.partnershipId}
+                    partner={p}
+                    onJoinRoom={(roomId, name) => void handleJoinRoom(roomId, name)}
+                    joiningRoomId={joiningRoomId}
+                  />
                 ))}
               </Section>
 

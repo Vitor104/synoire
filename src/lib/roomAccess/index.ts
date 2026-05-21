@@ -1,3 +1,4 @@
+export { canJoinRoom, type CanJoinRoomResult, type CanJoinRoomStatus } from './canJoinRoom'
 export {
   fetchIncomingRoomInvites,
   grantRoomAccess,

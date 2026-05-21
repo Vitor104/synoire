@@ -4,10 +4,16 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
+import {
+  clearLastActivity,
+  isIdleExpired,
+  touchLastActivity,
+} from '@/lib/auth/sessionIdle'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 
 type AuthContextValue = {
@@ -20,10 +26,45 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+const ACTIVITY_TOUCH_EVENTS: AuthChangeEvent[] = [
+  'SIGNED_IN',
+  'TOKEN_REFRESHED',
+  'INITIAL_SESSION',
+]
+
+const ACTIVITY_THROTTLE_MS = 30_000
+const IDLE_CHECK_INTERVAL_MS = 60_000
+
+function applySession(
+  nextSession: Session | null,
+  setSession: (s: Session | null) => void,
+  setUser: (u: User | null) => void,
+) {
+  setSession(nextSession)
+  setUser(nextSession?.user ?? null)
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured)
+  const lastActivityTouchRef = useRef(0)
+
+  const expireIdleSession = useCallback(async () => {
+    const supabase = getSupabase()
+    if (supabase) {
+      await supabase.auth.signOut({ scope: 'local' })
+    }
+    clearLastActivity()
+    applySession(null, setSession, setUser)
+  }, [])
+
+  const throttledTouchActivity = useCallback(() => {
+    const now = Date.now()
+    if (now - lastActivityTouchRef.current < ACTIVITY_THROTTLE_MS) return
+    lastActivityTouchRef.current = now
+    touchLastActivity(now)
+  }, [])
 
   useEffect(() => {
     const supabase = getSupabase()
@@ -34,34 +75,102 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false
 
-    void supabase.auth.getSession().then(({ data }) => {
+    const finishLoading = () => {
+      if (!cancelled) setIsLoading(false)
+    }
+
+    const checkIdleAndExpire = async (): Promise<boolean> => {
+      if (!isIdleExpired()) return false
+      await expireIdleSession()
+      return true
+    }
+
+    void (async () => {
+      if (await checkIdleAndExpire()) {
+        finishLoading()
+        return
+      }
+
+      const { data } = await supabase.auth.getSession()
       if (cancelled) return
-      setSession(data.session)
-      setUser(data.session?.user ?? null)
-      setIsLoading(false)
-    })
+
+      if (data.session) {
+        touchLastActivity()
+      }
+
+      applySession(data.session, setSession, setUser)
+      finishLoading()
+    })()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession)
-      setUser(nextSession?.user ?? null)
-      setIsLoading(false)
+    } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+      if (cancelled) return
+
+      if (nextSession?.user && ACTIVITY_TOUCH_EVENTS.includes(event)) {
+        touchLastActivity()
+        lastActivityTouchRef.current = Date.now()
+      }
+
+      if (!nextSession?.user) {
+        clearLastActivity()
+        applySession(null, setSession, setUser)
+        finishLoading()
+        return
+      }
+
+      if (await checkIdleAndExpire()) {
+        finishLoading()
+        return
+      }
+
+      applySession(nextSession, setSession, setUser)
+      finishLoading()
     })
+
+    const onActivity = () => {
+      if (!document.hasFocus() && document.visibilityState !== 'visible') return
+      throttledTouchActivity()
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        throttledTouchActivity()
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('focus', onActivity)
+    window.addEventListener('keydown', onActivity)
+    window.addEventListener('pointerdown', onActivity)
+
+    const idleInterval = window.setInterval(() => {
+      void supabase.auth.getSession().then(({ data }) => {
+        if (!data.session?.user || cancelled) return
+        if (isIdleExpired()) {
+          void expireIdleSession()
+        }
+      })
+    }, IDLE_CHECK_INTERVAL_MS)
 
     return () => {
       cancelled = true
       subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('focus', onActivity)
+      window.removeEventListener('keydown', onActivity)
+      window.removeEventListener('pointerdown', onActivity)
+      window.clearInterval(idleInterval)
     }
-  }, [])
+  }, [expireIdleSession, throttledTouchActivity])
 
   const signOut = useCallback(async () => {
     const supabase = getSupabase()
     if (supabase) {
-      await supabase.auth.signOut()
+      await supabase.auth.signOut({ scope: 'global' })
     }
-    setSession(null)
-    setUser(null)
+    clearLastActivity()
+    applySession(null, setSession, setUser)
   }, [])
 
   const value = useMemo(

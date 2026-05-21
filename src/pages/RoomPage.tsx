@@ -8,7 +8,6 @@ import { RoomMediaEmbed } from '@/components/room/RoomMediaEmbed'
 import { SessionOnboarding } from '@/components/room/SessionOnboarding'
 import { InvitePartnersModal } from '@/components/room/InvitePartnersModal'
 import { ThemeSelectorModal } from '@/components/room/ThemeSelectorModal'
-import { SAMPLE_HUBS } from '@/data/sampleHubs'
 import { useAuth } from '@/contexts/AuthContext'
 import { useStudyPartners } from '@/contexts/StudyPartnersContext'
 import { useUserPlan } from '@/contexts/UserPlanContext'
@@ -17,7 +16,8 @@ import { useImmersiveTheme } from '@/hooks/useImmersiveTheme'
 import { useRecordStudySession } from '@/hooks/useRecordStudySession'
 import { useStudySessions } from '@/hooks/useStudySessions'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
-import { useStudyRoom } from '@/hooks/useStudyRoom'
+import { useRoomEntry, type RoomEntryStatus } from '@/hooks/useRoomEntry'
+import { formatRoomDisplayTitle } from '@/lib/hubRooms'
 import { useRoomChat } from '@/hooks/useRoomChat'
 import { useRoomSoundscape } from '@/hooks/useRoomSoundscape'
 import { getImmersiveTheme, type ImmersiveThemeId } from '@/lib/immersiveThemes'
@@ -40,16 +40,6 @@ type RoomLocationState = {
   sessionStart?: SessionMode
 }
 
-function roomTitle(roomId: string | undefined, studyName: string | null) {
-  if (studyName) return studyName
-  if (!roomId) return 'Sala de estudo'
-  const hub = SAMPLE_HUBS.find((h) => h.slug === roomId)
-  if (hub) return `Sala ${hub.name}`
-  if (roomId === 'demo') return ''
-  const pretty = roomId.replace(/[-_]/g, ' ')
-  return `Sala ${pretty.charAt(0).toUpperCase()}${pretty.slice(1)}`
-}
-
 function initialSessionMode(state: unknown): SessionMode {
   const s = state as RoomLocationState | null
   if (s?.sessionStart === 'lounge' || s?.sessionStart === 'active') {
@@ -58,13 +48,33 @@ function initialSessionMode(state: unknown): SessionMode {
   return 'onboarding'
 }
 
+function roomEntrySubtitle(status: RoomEntryStatus): string {
+  switch (status) {
+    case 'denied_private':
+      return 'Peça um convite ao criador da sala para entrar.'
+    case 'not_found':
+      return 'A sala não existe ou não está mais disponível.'
+    case 'error':
+      return 'Tente novamente em instantes.'
+    case 'loading':
+      return 'Verificando acesso…'
+    default:
+      return ''
+  }
+}
+
 export function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const location = useLocation()
-  const { room: studyRoom } = useStudyRoom(roomId)
+  const { room: studyRoom, entryStatus, entryMessage } = useRoomEntry(roomId)
   const title = useMemo(
-    () => roomTitle(roomId, studyRoom?.name ?? null),
-    [roomId, studyRoom?.name],
+    () =>
+      formatRoomDisplayTitle(
+        entryStatus === 'ready' ? 'ready' : entryStatus,
+        studyRoom?.name ?? null,
+        roomId,
+      ),
+    [entryStatus, studyRoom?.name, roomId],
   )
   const prefersReducedMotion = usePrefersReducedMotion()
   const { user } = useAuth()
@@ -296,6 +306,28 @@ export function RoomPage() {
 
   const canvasMotionSpeed = isLounge ? 0.35 : 1
   const canvasPulseSpeed = isLounge ? 0.001 : 0.0025
+
+  if (entryStatus !== 'ready') {
+    const subtitle = entryMessage ?? roomEntrySubtitle(entryStatus)
+    return (
+      <div
+        role="main"
+        className="fixed inset-0 z-10 flex flex-col items-center justify-center bg-night px-6 text-primary"
+        aria-label={title}
+      >
+        <h1 className="text-center text-xl font-medium text-primary">{title}</h1>
+        {subtitle && (
+          <p className="mt-3 max-w-sm text-center text-sm text-secondary">{subtitle}</p>
+        )}
+        <Link
+          to="/painel"
+          className="mt-8 rounded-xl border border-firefly/30 bg-firefly/10 px-5 py-2.5 text-sm font-medium text-firefly hover:brightness-110"
+        >
+          Voltar ao painel
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <motion.div

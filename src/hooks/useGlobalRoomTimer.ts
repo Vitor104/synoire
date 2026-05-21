@@ -6,6 +6,8 @@ import {
   timerPayloadToCycleConfig,
   type StudyRoom,
 } from '@/lib/hubRooms'
+import { isDemoMode } from '@/lib/hubRooms/demo'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import {
   buildAdvancedState,
   DEFAULT_CYCLE_CONFIG,
@@ -38,6 +40,23 @@ function tryClaimLeader(roomId: string): boolean {
   }
 }
 
+function shouldUseMockTimer(
+  roomId: string | undefined,
+  studyRoom: StudyRoom | null | undefined,
+): boolean {
+  if (studyRoom) return false
+  if (!roomId || roomId === 'demo') return true
+  return !isSupabaseConfigured || isDemoMode()
+}
+
+const safeIdleTimerState = (): RoomTimerState & { isIdle: boolean } => ({
+  phase: 'focus',
+  startedAt: new Date().toISOString(),
+  presentCount: 0,
+  cycle: DEFAULT_CYCLE_CONFIG,
+  isIdle: true,
+})
+
 function studyRoomToTimerState(room: StudyRoom): RoomTimerState & { isIdle: boolean } {
   const ts = room.current_timer_state
   const cycle = timerPayloadToCycleConfig(ts)
@@ -68,19 +87,24 @@ export function useGlobalRoomTimer(
   const id = roomId ?? 'demo'
   const adapter = getHubRoomsAdapter()
 
+  const useMock = shouldUseMockTimer(roomId, studyRoom)
+
   const [mockState, setMockState] = useState<RoomTimerState>(() =>
     getMockRoomTimerState(roomId),
   )
 
   useEffect(() => {
-    if (studyRoom) return
+    if (studyRoom || !useMock) return
     setMockState(getMockRoomTimerState(roomId))
-  }, [roomId, studyRoom])
+  }, [roomId, studyRoom, useMock])
 
   const derived = useMemo(() => {
     if (studyRoom) return studyRoomToTimerState(studyRoom)
-    return { ...mockState, isIdle: false, cycle: DEFAULT_CYCLE_CONFIG }
-  }, [studyRoom, mockState])
+    if (useMock) {
+      return { ...mockState, isIdle: false, cycle: DEFAULT_CYCLE_CONFIG }
+    }
+    return safeIdleTimerState()
+  }, [studyRoom, mockState, useMock])
 
   const config: RoomCycleConfig = derived.cycle ?? DEFAULT_CYCLE_CONFIG
   const isIdle = derived.isIdle
@@ -133,10 +157,11 @@ export function useGlobalRoomTimer(
   }, [studyRoom, roomId, adapter])
 
   useEffect(() => {
+    if (!studyRoom && !useMock) return
     if (isIdle || !isComplete) return
     if (!tryClaimLeader(id)) return
     void advancePhase()
-  }, [isComplete, isIdle, id, advancePhase])
+  }, [isComplete, isIdle, id, advancePhase, studyRoom, useMock])
 
   const presentCount = derived.presentCount ?? mockState.presentCount ?? 128
 

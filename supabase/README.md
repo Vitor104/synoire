@@ -1,5 +1,19 @@
 # Supabase — Synoire
 
+## Sessões (Auth)
+
+O front-end encerra a sessão após **120 minutos** sem atividade (`synoire_last_activity_at` em `localStorage`). Logout explícito usa `signOut({ scope: 'global' })` para revogar o refresh token no servidor.
+
+Em projetos **Pro+**, alinhe o reforço server-side em [Auth → Sessions](https://supabase.com/dashboard/project/_/auth/sessions):
+
+| Opção | Valor sugerido |
+|--------|----------------|
+| Inactivity timeout | 120 minutos |
+
+O servidor só aplica o timeout no próximo refresh do token (duração efetiva ≈ inatividade + expiração do JWT). Não reduza o JWT abaixo de 5 minutos sem necessidade.
+
+Para outro limite no cliente, defina `VITE_SESSION_IDLE_MINUTES` no `.env`.
+
 ## Migrações
 
 ```bash

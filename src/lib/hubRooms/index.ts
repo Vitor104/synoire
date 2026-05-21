@@ -16,6 +16,10 @@ export {
   type CycleDurations,
 } from './cycles'
 export {
+  formatRoomDisplayTitle,
+  type RoomDisplayTitleState,
+} from './formatRoomDisplayTitle'
+export {
   buildCreatePayload,
   buildIdleTimerState,
   buildRoomName,
