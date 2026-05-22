@@ -58,12 +58,16 @@ function ShellNavItems({
   onOpenPartners: () => void
   onNavigate?: () => void
 }) {
-  const linkExtra = onNavigate ? { onClick: onNavigate } : {}
-
   return (
     <>
       {NAV_LINKS_BEFORE_PARTNERS.map(({ to, label, end }) => (
-        <NavLink key={to} to={to} end={end} className={navClass} {...linkExtra}>
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={navClass}
+          onClick={() => onNavigate?.()}
+        >
           {({ isActive }) => (
             <>
               <span>{label}</span>
@@ -82,7 +86,13 @@ function ShellNavItems({
         isOpen={partnersOpen}
       />
       {NAV_LINKS_AFTER_PARTNERS.map(({ to, label, end }) => (
-        <NavLink key={to} to={to} end={end} className={navClass} {...linkExtra}>
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={navClass}
+          onClick={() => onNavigate?.()}
+        >
           {({ isActive }) => (
             <>
               <span>{label}</span>

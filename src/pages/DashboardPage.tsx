@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { OnboardingGoalModal } from '@/components/dashboard/OnboardingGoalModal'
 import { AppToast } from '@/components/ui/AppToast'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { motion, type Variants } from 'motion/react'
@@ -102,10 +101,10 @@ export function DashboardPage() {
   const listInner = pageStaggerListInner(reduced)
 
   const { sessions, isLoading: sessionsLoading } = useStudySessions()
-  const { stats, isLoading: statsLoading, isSaving, saveWeeklyGoal } = useUserStats()
+  const { stats, isLoading: statsLoading } = useUserStats()
   const isLoading = sessionsLoading || statsLoading
-
-  const needsOnboarding = needsWeeklyGoalOnboarding(stats.weeklyGoalMinutes)
+  const needsOnboarding =
+    !statsLoading && needsWeeklyGoalOnboarding(stats.weeklyGoalMinutes)
 
   const points = useMemo(() => toSessionPoints(sessions), [sessions])
 
@@ -140,26 +139,13 @@ export function DashboardPage() {
   const streakDays = stats.currentStreak
   const streakLabel = streakDays === 1 ? '1 dia' : `${streakDays} dias`
 
-  const showOnboardingModal = needsOnboarding && !statsLoading
-
   return (
     <>
-      <OnboardingGoalModal
-        open={showOnboardingModal}
-        onSave={saveWeeklyGoal}
-        prefersReducedMotion={reduced}
-        isSubmitting={isSaving}
-      />
-
       <motion.div
-        className={[
-          'mx-auto max-w-5xl',
-          showOnboardingModal ? 'pointer-events-none opacity-40' : '',
-        ].join(' ')}
+        className="mx-auto max-w-5xl"
         variants={c}
         initial={reduced ? false : 'hidden'}
         animate="visible"
-        aria-hidden={showOnboardingModal}
       >
         <motion.header variants={item} className="mb-10">
           <h1 className="text-2xl font-semibold text-primary">
