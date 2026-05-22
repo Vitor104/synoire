@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { getRoomByIdMock, getRoomMock, maybeSingleMock, fromMock } = vi.hoisted(() => ({
+const {
+  getRoomByIdMock,
+  getRoomMock,
+  grantMaybeSingleMock,
+  creatorMaybeSingleMock,
+  fromMock,
+} = vi.hoisted(() => ({
   getRoomByIdMock: vi.fn(),
   getRoomMock: vi.fn(),
-  maybeSingleMock: vi.fn(),
+  grantMaybeSingleMock: vi.fn(),
+  creatorMaybeSingleMock: vi.fn(),
   fromMock: vi.fn(),
 }))
 
@@ -53,18 +60,34 @@ describe('canJoinRoom', () => {
     getRoomByIdMock.mockReset()
     getRoomMock.mockReset()
     fromMock.mockReset()
-    maybeSingleMock.mockReset()
+    grantMaybeSingleMock.mockReset()
+    creatorMaybeSingleMock.mockReset()
 
-    fromMock.mockReturnValue({
-      select: () => ({
-        eq: () => ({
-          eq: () => ({
-            maybeSingle: maybeSingleMock,
+    fromMock.mockImplementation((table: string) => {
+      if (table === 'room_access') {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                maybeSingle: grantMaybeSingleMock,
+              }),
+            }),
           }),
-        }),
-      }),
+        }
+      }
+      if (table === 'rooms') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: creatorMaybeSingleMock,
+            }),
+          }),
+        }
+      }
+      throw new Error(`unexpected table: ${table}`)
     })
-    maybeSingleMock.mockResolvedValue({ data: null, error: null })
+    grantMaybeSingleMock.mockResolvedValue({ data: null, error: null })
+    creatorMaybeSingleMock.mockResolvedValue({ data: null, error: null })
   })
 
   it('allows public room without grant', async () => {
@@ -74,7 +97,7 @@ describe('canJoinRoom', () => {
     expect(result.status).toBe('allowed')
   })
 
-  it('denies private room without grant', async () => {
+  it('denies private room without grant for non-creator', async () => {
     getRoomByIdMock.mockResolvedValue({
       ok: true,
       data: { ...baseRoom, is_private: true },
@@ -84,12 +107,22 @@ describe('canJoinRoom', () => {
     expect(result.status).toBe('denied_private')
   })
 
+  it('allows private room for creator without grant', async () => {
+    getRoomByIdMock.mockResolvedValue({
+      ok: true,
+      data: { ...baseRoom, is_private: true, creator_id: 'creator-1' },
+    })
+
+    const result = await canJoinRoom('room-1', 'creator-1')
+    expect(result.status).toBe('allowed')
+  })
+
   it('allows private room with grant', async () => {
     getRoomByIdMock.mockResolvedValue({
       ok: true,
       data: { ...baseRoom, is_private: true },
     })
-    maybeSingleMock.mockResolvedValue({ data: { room_id: 'room-1' }, error: null })
+    grantMaybeSingleMock.mockResolvedValue({ data: { room_id: 'room-1' }, error: null })
 
     const result = await canJoinRoom('room-1', 'user-2')
     expect(result.status).toBe('allowed')
@@ -119,9 +152,24 @@ describe('canJoinRoom', () => {
       message: 'permission denied',
       code: 'forbidden',
     })
-    maybeSingleMock.mockResolvedValue({ data: { room_id: 'room-1' }, error: null })
+    grantMaybeSingleMock.mockResolvedValue({ data: { room_id: 'room-1' }, error: null })
 
     const result = await canJoinRoom('room-1', 'user-2')
+    expect(result.status).toBe('allowed')
+  })
+
+  it('allows on forbidden when user is creator', async () => {
+    getRoomByIdMock.mockResolvedValue({
+      ok: false,
+      message: 'permission denied',
+      code: 'forbidden',
+    })
+    creatorMaybeSingleMock.mockResolvedValue({
+      data: { creator_id: 'creator-1' },
+      error: null,
+    })
+
+    const result = await canJoinRoom('room-1', 'creator-1')
     expect(result.status).toBe('allowed')
   })
 })

@@ -54,6 +54,36 @@ async function userHasRoomAccessGrant(
   return Boolean(data)
 }
 
+function userIsRoomCreator(room: StudyRoom, userId: string): boolean {
+  return room.creator_id === userId
+}
+
+async function fetchRoomCreatorId(roomId: string): Promise<string | null> {
+  if (!isSupabaseConfigured || isDemoMode) {
+    const room = await mockHubRoomsAdapter.getRoom(roomId)
+    return room?.creator_id ?? null
+  }
+
+  const supabase = getSupabase()
+  if (!supabase) {
+    const room = await mockHubRoomsAdapter.getRoom(roomId)
+    return room?.creator_id ?? null
+  }
+
+  const { data, error } = await supabase
+    .from('rooms')
+    .select('creator_id')
+    .eq('id', roomId)
+    .maybeSingle()
+
+  if (error) {
+    if (import.meta.env.DEV) console.error('[canJoinRoom creator check]', error)
+    return null
+  }
+
+  return data?.creator_id ?? null
+}
+
 export async function canJoinRoom(
   roomId: string,
   userId: string,
@@ -70,7 +100,7 @@ export async function canJoinRoom(
       if (hasGrant) return { status: 'allowed' }
       return { status: 'not_found' }
     }
-    if (!room.is_private || hasGrant) {
+    if (!room.is_private || hasGrant || userIsRoomCreator(room, userId)) {
       return { status: 'allowed' }
     }
     return { status: 'denied_private' }
@@ -78,6 +108,8 @@ export async function canJoinRoom(
     const code = (err as { code?: string }).code
     if (code === 'forbidden') {
       if (hasGrant) return { status: 'allowed' }
+      const creatorId = await fetchRoomCreatorId(roomId)
+      if (creatorId === userId) return { status: 'allowed' }
       return { status: 'denied_private' }
     }
     const message = err instanceof Error ? err.message : 'Não foi possível verificar a sala.'
