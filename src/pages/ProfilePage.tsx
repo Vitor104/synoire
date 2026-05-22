@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { EditProfileModal } from '@/components/profile/EditProfileModal'
 import type { EditProfileSavePayload } from '@/components/profile/EditProfileModal'
+import { SettingsModal } from '@/components/profile/SettingsModal'
 import { FavoriteHubCard } from '@/components/profile/FavoriteHubCard'
 import { AppToast } from '@/components/ui/AppToast'
 import { useJoinedHubs } from '@/contexts/JoinedHubsContext'
@@ -55,6 +56,24 @@ function LightningWatermark({ className }: { className?: string }) {
   )
 }
 
+function SettingsGearIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+    </svg>
+  )
+}
+
 export function ProfilePage() {
   const reducedMotion = usePrefersReducedMotion()
   const { profile, isLoading, error, isSaving, updateProfile } = useProfile()
@@ -66,6 +85,7 @@ export function ProfilePage() {
   } = useUserStats()
   const { joinedHubs, isLoading: hubsLoading } = useJoinedHubs()
   const [editOpen, setEditOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [toast, setToast] = useState({ message: '', visible: false })
 
   const c = pageStaggerContainer(reducedMotion)
@@ -197,13 +217,23 @@ export function ProfilePage() {
                     Nome público, concurso-alvo e preferências de foco
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setEditOpen(true)}
-                  className="shrink-0 rounded-xl border border-firefly/30 bg-firefly/10 px-4 py-2 text-sm font-medium text-firefly transition hover:border-firefly/50 hover:brightness-110"
-                >
-                  Editar Perfil
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSettingsOpen(true)}
+                    aria-label="Configurações da conta"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-secondary transition hover:bg-elevated hover:text-primary"
+                  >
+                    <SettingsGearIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditOpen(true)}
+                    className="rounded-xl border border-firefly/30 bg-firefly/10 px-4 py-2 text-sm font-medium text-firefly transition hover:border-firefly/50 hover:brightness-110"
+                  >
+                    Editar Perfil
+                  </button>
+                </div>
               </div>
             </motion.header>
 
@@ -267,6 +297,13 @@ export function ProfilePage() {
         initialValues={editInitialValues}
         onSave={handleSaveProfile}
         isSubmitting={isSubmitting}
+      />
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        prefersReducedMotion={reducedMotion}
+        onToast={(message) => setToast({ message, visible: true })}
       />
 
       <AppToast
