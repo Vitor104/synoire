@@ -1,5 +1,4 @@
 import { motion } from 'motion/react'
-import { Link } from 'react-router-dom'
 import { StudyRoomPreview } from '@/components/landing/StudyRoomPreview'
 import { Section } from '@/components/landing/primitives'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
@@ -40,13 +39,7 @@ export function LandingExperience() {
           variants={item}
           className="mx-auto mt-10 max-w-xl text-center text-pretty text-secondary"
         >
-          Um ambiente calmo criado para tornar a constância algo natural.{' '}
-          <Link
-            to="/salas/demo"
-            className="text-firefly underline-offset-4 transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-firefly/50"
-          >
-            Experimentar a sala demo
-          </Link>
+          Um ambiente calmo criado para tornar a constância algo natural.
         </motion.p>
       </motion.div>
     </Section>
