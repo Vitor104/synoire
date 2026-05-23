@@ -64,6 +64,7 @@ function initStars(
 type ImmersiveCanvasProps = {
   presentCount: number
   variant?: 'room' | 'preview'
+  background?: 'full' | 'minimal'
   theme?: ImmersiveThemeId
   motionSpeed?: number
   pulseSpeed?: number
@@ -73,6 +74,7 @@ type ImmersiveCanvasProps = {
 export function ImmersiveCanvas({
   presentCount,
   variant = 'room',
+  background = 'full',
   theme = 'firefly',
   motionSpeed = 1,
   pulseSpeed = 0.0025,
@@ -89,11 +91,13 @@ export function ImmersiveCanvas({
   const pulseSpeedRef = useRef(pulseSpeed)
   const syncFlashUntilRef = useRef(syncFlashUntil)
   const themeRef = useRef(theme)
+  const backgroundRef = useRef(background)
 
   motionSpeedRef.current = motionSpeed
   pulseSpeedRef.current = pulseSpeed
   syncFlashUntilRef.current = syncFlashUntil
   themeRef.current = theme
+  backgroundRef.current = background
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -102,9 +106,10 @@ export function ImmersiveCanvas({
     if (!ctx) return
 
     const isPreview = variant === 'preview'
+    const isMinimal = backgroundRef.current === 'minimal'
     const maxFlies = reduced ? 18 : isPreview ? 32 : 72
     const n = Math.min(Math.max(4, presentCount), maxFlies)
-    const starCount = reduced ? 40 : isPreview ? 50 : 90
+    const starCount = isMinimal ? 35 : reduced ? 40 : isPreview ? 50 : 90
     const dprCap = isPreview ? 1 : 2
     const shadowScale = isPreview ? 0.55 : 1
 
@@ -127,13 +132,17 @@ export function ImmersiveCanvas({
       const horizonRatio =
         currentTheme === 'forest' ? 0.48 : currentTheme === 'rain' ? 0.56 : 0.58
       starsRef.current = initStars(starCount, w, h, rand)
-      const flyCount =
-        currentTheme === 'rain'
-          ? Math.max(4, Math.floor(n * 0.45))
-          : currentTheme === 'forest'
-            ? Math.max(4, Math.floor(n * 0.75))
-            : n
-      firefliesRef.current = initFireflies(flyCount, w, h, rand, horizonRatio)
+      if (!isMinimal) {
+        const flyCount =
+          currentTheme === 'rain'
+            ? Math.max(4, Math.floor(n * 0.45))
+            : currentTheme === 'forest'
+              ? Math.max(4, Math.floor(n * 0.75))
+              : n
+        firefliesRef.current = initFireflies(flyCount, w, h, rand, horizonRatio)
+      } else {
+        firefliesRef.current = []
+      }
     }
 
     resize()
@@ -217,6 +226,29 @@ export function ImmersiveCanvas({
       ctx.fillRect(0, 0, w, h)
     }
 
+    const drawMinimalSky = (w: number, h: number) => {
+      const sky = ctx.createLinearGradient(0, 0, 0, h)
+      sky.addColorStop(0, '#08060c')
+      sky.addColorStop(0.45, '#050502')
+      sky.addColorStop(1, '#0a0e14')
+      ctx.fillStyle = sky
+      ctx.fillRect(0, 0, w, h)
+
+      const vignette = ctx.createRadialGradient(
+        w * 0.5,
+        h * 0.42,
+        0,
+        w * 0.5,
+        h * 0.5,
+        Math.max(w, h) * 0.65,
+      )
+      vignette.addColorStop(0, 'rgba(163, 163, 79, 0.04)')
+      vignette.addColorStop(0.5, 'rgba(0, 0, 0, 0)')
+      vignette.addColorStop(1, 'rgba(5, 5, 2, 0.75)')
+      ctx.fillStyle = vignette
+      ctx.fillRect(0, 0, w, h)
+    }
+
     const drawFog = (w: number, h: number, currentTheme: ImmersiveThemeId) => {
       const fog = ctx.createRadialGradient(
         w * 0.5,
@@ -248,29 +280,38 @@ export function ImmersiveCanvas({
       const h = canvas.clientHeight
       const t = now - t0
       const currentTheme = themeRef.current
+      const isMinimalBg = backgroundRef.current === 'minimal'
 
-      drawSky(w, h, currentTheme)
+      if (isMinimalBg) {
+        drawMinimalSky(w, h)
+      } else {
+        drawSky(w, h, currentTheme)
+      }
 
       const stars = starsRef.current
-      const starTint =
-        currentTheme === 'forest'
+      const starTint = isMinimalBg
+        ? '220, 230, 245'
+        : currentTheme === 'forest'
           ? '220, 235, 210'
           : currentTheme === 'rain'
             ? '200, 215, 235'
             : '220, 230, 245'
+      const starAlpha = isMinimalBg ? 0.06 : 0.12
       for (const s of stars) {
         const tw = 0.35 + 0.65 * Math.sin(s.tw + t * 0.0012)
-        ctx.fillStyle = `rgba(${starTint}, ${0.12 * tw})`
+        ctx.fillStyle = `rgba(${starTint}, ${starAlpha * tw})`
         ctx.beginPath()
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
         ctx.fill()
       }
 
-      drawFog(w, h, currentTheme)
-      drawHorizon(w, h, t, currentTheme)
+      if (!isMinimalBg) {
+        drawFog(w, h, currentTheme)
+        drawHorizon(w, h, t, currentTheme)
 
-      if (currentTheme === 'rain') {
-        drawRain(w, h, t)
+        if (currentTheme === 'rain') {
+          drawRain(w, h, t)
+        }
       }
 
       const flies = firefliesRef.current
@@ -335,7 +376,7 @@ export function ImmersiveCanvas({
       document.removeEventListener('visibilitychange', onVisibility)
       ro.disconnect()
     }
-  }, [presentCount, reduced, variant, theme])
+  }, [presentCount, reduced, variant, background, theme])
 
   return (
     <canvas

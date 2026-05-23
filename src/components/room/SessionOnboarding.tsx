@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
-import { formatTimerSeconds, type RoomPhase } from '@/lib/roomTimer'
+import { RoomTimerRing } from '@/components/room/RoomTimerRing'
+import type { RoomPhase } from '@/lib/roomTimer'
 import {
   pageStaggerContainer,
   pageStaggerItem,
@@ -10,6 +11,8 @@ type SessionOnboardingProps = {
   title: string
   phase: RoomPhase
   remainingSeconds: number
+  segmentDuration: number
+  showTimerProgress?: boolean
   presentCount: number
   prefersReducedMotion: boolean
   onJoinCurrent: () => void
@@ -20,6 +23,8 @@ export function SessionOnboarding({
   title,
   phase,
   remainingSeconds,
+  segmentDuration,
+  showTimerProgress = true,
   presentCount,
   prefersReducedMotion,
   onJoinCurrent,
@@ -59,16 +64,19 @@ export function SessionOnboarding({
         </motion.h1>
       ) : null}
 
-      <motion.p
-        variants={staggerItem}
-        className="mt-8 text-center text-sm text-secondary"
-      >
-        {formatTimerSeconds(remainingSeconds)} restantes
-      </motion.p>
+      <motion.div variants={staggerItem} className="mt-10 w-full max-w-xs">
+        <RoomTimerRing
+          phase={phase}
+          remainingSeconds={remainingSeconds}
+          segmentDuration={segmentDuration}
+          showProgress={showTimerProgress}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+      </motion.div>
 
       <motion.p
         variants={staggerItem}
-        className="mt-4 text-center text-sm text-secondary"
+        className="mt-6 text-center text-sm text-secondary"
       >
         {presentCount} luzes ativas
       </motion.p>

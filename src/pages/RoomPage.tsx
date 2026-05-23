@@ -2,6 +2,7 @@ import { motion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ImmersiveCanvas } from '@/components/room/ImmersiveCanvas'
+import { RoomFocusStage } from '@/components/room/RoomFocusStage'
 import { PreRoomLounge } from '@/components/room/PreRoomLounge'
 import { RoomChat, RoomChatToggleButton } from '@/components/room/RoomChat'
 import { RoomMediaEmbed } from '@/components/room/RoomMediaEmbed'
@@ -13,6 +14,7 @@ import { useStudyPartners } from '@/contexts/StudyPartnersContext'
 import { useAuthenticatedGlobalPresence } from '@/hooks/useAuthenticatedGlobalPresence'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { useGlobalRoomTimer } from '@/hooks/useGlobalRoomTimer'
+import { useProfile } from '@/hooks/useProfile'
 import { useImmersiveTheme } from '@/hooks/useImmersiveTheme'
 import { usePartialStudyTracking } from '@/hooks/usePartialStudyTracking'
 import { useRecordStudySession } from '@/hooks/useRecordStudySession'
@@ -25,11 +27,11 @@ import { useRoomSoundscape } from '@/hooks/useRoomSoundscape'
 import { getImmersiveTheme, type ImmersiveThemeId } from '@/lib/immersiveThemes'
 import { canSendRoomChat } from '@/lib/roomChat'
 import { shouldPromoteLoungeToActive } from '@/lib/roomSession/loungePromotion'
-import { formatTimerSeconds, type RoomPhase } from '@/lib/roomTimer'
 import {
-  pageStaggerContainer,
-  pageStaggerItem,
-} from '@/motion/pageStagger'
+  getSegmentDuration,
+  type RoomPhase,
+} from '@/lib/roomTimer'
+import type { FocusCycle } from '@/lib/hubRooms/types'
 
 type SessionMode = 'onboarding' | 'lounge' | 'active'
 
@@ -90,12 +92,10 @@ export function RoomPage() {
   )
   const prefersReducedMotion = usePrefersReducedMotion()
   const { user } = useAuth()
+  const { profile } = useProfile()
   const { hasGlowAccess, openPaywall } = useUserPlan()
   const { acceptedPartners } = useStudyPartners()
   const { selectedThemeId, effectiveThemeId, setTheme } = useImmersiveTheme()
-  const staggerC = pageStaggerContainer(prefersReducedMotion)
-  const staggerItem = pageStaggerItem(prefersReducedMotion)
-
   const timer = useGlobalRoomTimer(roomId, studyRoom)
   const {
     phase,
@@ -105,6 +105,7 @@ export function RoomPage() {
     startFocusTimer,
     isSegmentComplete,
     startedAt,
+    cycle,
   } = timer
   const { recordSession } = useStudySessions()
 
@@ -338,6 +339,18 @@ export function RoomPage() {
 
   const canvasMotionSpeed = isLounge ? 0.35 : 1
   const canvasPulseSpeed = isLounge ? 0.001 : 0.0025
+  const canvasBackground = isActive ? 'minimal' : 'full'
+
+  const segmentDuration = getSegmentDuration(phase, cycle)
+  const focusCycle: FocusCycle = studyRoom?.focus_cycle ?? '25/5'
+
+  const currentUserInitial = useMemo(() => {
+    const fromDisplayName = profile?.displayName?.trim().charAt(0)
+    if (fromDisplayName) return fromDisplayName.toUpperCase()
+    const fromEmail = user?.email?.trim().charAt(0)
+    if (fromEmail) return fromEmail.toUpperCase()
+    return '?'
+  }, [profile?.displayName, user?.email])
 
   if (entryStatus !== 'ready') {
     const subtitle = entryMessage ?? roomEntrySubtitle(entryStatus)
@@ -385,6 +398,7 @@ export function RoomPage() {
       >
         <ImmersiveCanvas
           presentCount={presentCount}
+          background={canvasBackground}
           theme={effectiveThemeId}
           motionSpeed={canvasMotionSpeed}
           pulseSpeed={canvasPulseSpeed}
@@ -393,46 +407,18 @@ export function RoomPage() {
       </motion.div>
 
       {isActive && (
-        <motion.div
-          key={roomId ?? 'room'}
-          className="relative z-10 flex min-h-dvh flex-col items-center justify-center px-6 pb-24 pt-16"
-          variants={staggerC}
-          initial={prefersReducedMotion ? false : 'hidden'}
-          animate="visible"
-        >
-          <motion.p
-            variants={staggerItem}
-            className={`text-center text-xs font-medium uppercase tracking-[0.2em] transition-opacity duration-500 ${chromeClass} ${
-              phase === 'focus' ? 'text-firefly' : 'text-aqua'
-            }`}
-          >
-            {phase === 'focus' ? 'Sessão de foco' : 'Pausa curta'}
-          </motion.p>
-
-          <motion.h1
-            variants={staggerItem}
-            className="mt-3 text-center text-lg font-normal text-secondary transition-opacity duration-500 sm:text-xl"
-          >
-            {title}
-          </motion.h1>
-
-          <motion.p
-            variants={staggerItem}
-            className={`mt-2 text-center text-sm text-secondary transition-opacity duration-500 ${chromeClass}`}
-          >
-            {presentCount} presentes
-          </motion.p>
-
-          <motion.p
-            variants={staggerItem}
-            className={`mt-14 font-mono text-6xl font-light tabular-nums tracking-tight sm:text-7xl md:text-8xl ${phase === 'focus' ? 'text-primary' : 'text-aqua'}`}
-            initial={timerRitualFade ? { opacity: 0 } : false}
-            animate={{ opacity: 1 }}
-            transition={{ delay: timerRitualFade ? 0.3 : 0, duration: 0.6 }}
-          >
-            {formatTimerSeconds(remainingSeconds)}
-          </motion.p>
-        </motion.div>
+        <RoomFocusStage
+          phase={phase}
+          remainingSeconds={remainingSeconds}
+          segmentDuration={segmentDuration}
+          presentCount={presentCount}
+          focusCycle={focusCycle}
+          currentUserInitial={currentUserInitial}
+          prefersReducedMotion={prefersReducedMotion}
+          chromeClass={chromeClass}
+          timerRitualFade={timerRitualFade}
+          isPlaying={sound.isPlaying}
+        />
       )}
 
       {sessionMode === 'onboarding' && (
@@ -440,6 +426,8 @@ export function RoomPage() {
           title={title}
           phase={phase}
           remainingSeconds={remainingSeconds}
+          segmentDuration={segmentDuration}
+          showTimerProgress={!isIdle}
           presentCount={presentCount}
           prefersReducedMotion={prefersReducedMotion}
           onJoinCurrent={() => {
@@ -456,6 +444,7 @@ export function RoomPage() {
       {sessionMode === 'lounge' && (
         <PreRoomLounge
           remainingSeconds={remainingSeconds}
+          segmentDuration={segmentDuration}
           phase={phase}
           isPrep={isIdle}
           prefersReducedMotion={prefersReducedMotion}

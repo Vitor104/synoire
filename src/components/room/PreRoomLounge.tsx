@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
-import { formatTimerSeconds, type RoomPhase } from '@/lib/roomTimer'
+import { RoomTimerRing } from '@/components/room/RoomTimerRing'
+import type { RoomPhase } from '@/lib/roomTimer'
 import {
   pageStaggerContainer,
   pageStaggerItem,
@@ -8,6 +9,7 @@ import {
 type PreRoomLoungeProps = {
   /** Remaining time in the current segment (prep, focus, or break). */
   remainingSeconds: number
+  segmentDuration: number
   phase: RoomPhase
   isPrep: boolean
   prefersReducedMotion: boolean
@@ -34,6 +36,7 @@ function loungeCopy(isPrep: boolean, phase: RoomPhase) {
 
 export function PreRoomLounge({
   remainingSeconds,
+  segmentDuration,
   phase,
   isPrep,
   prefersReducedMotion,
@@ -41,6 +44,7 @@ export function PreRoomLounge({
   const staggerC = pageStaggerContainer(prefersReducedMotion)
   const staggerItem = pageStaggerItem(prefersReducedMotion)
   const copy = loungeCopy(isPrep, phase)
+  const ringPhase: RoomPhase = isPrep ? 'focus' : phase
 
   return (
     <motion.div
@@ -64,13 +68,15 @@ export function PreRoomLounge({
       >
         {copy.countdownLabel}
       </motion.p>
-      <motion.p
-        variants={staggerItem}
-        className="mt-3 font-mono text-5xl font-light tabular-nums tracking-tight text-primary sm:text-6xl"
-        aria-live="polite"
-      >
-        {formatTimerSeconds(remainingSeconds)}
-      </motion.p>
+      <motion.div variants={staggerItem} className="mt-6 w-full max-w-xs">
+        <RoomTimerRing
+          phase={ringPhase}
+          remainingSeconds={remainingSeconds}
+          segmentDuration={segmentDuration}
+          showProgress={false}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+      </motion.div>
     </motion.div>
   )
 }
