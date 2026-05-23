@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase'
 import { mapAuthError } from './errors'
+import { OAUTH_PENDING_STORAGE_KEY } from './oauthCallback'
 
 export type SignInWithGoogleResult =
   | { ok: true }
@@ -12,6 +13,10 @@ export async function signInWithGoogle(): Promise<SignInWithGoogleResult> {
   }
 
   const redirectTo = `${window.location.origin}/painel`
+
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(OAUTH_PENDING_STORAGE_KEY, '1')
+  }
 
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

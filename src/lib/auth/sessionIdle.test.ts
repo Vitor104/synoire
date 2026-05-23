@@ -29,8 +29,8 @@ describe('sessionIdle', () => {
     expect(isIdleExpired(now + SESSION_IDLE_MS)).toBe(true)
   })
 
-  it('isIdleExpired is true when no activity recorded', () => {
-    expect(isIdleExpired()).toBe(true)
+  it('isIdleExpired is false when no activity recorded', () => {
+    expect(isIdleExpired()).toBe(false)
   })
 
   it('clearLastActivity removes the storage key', () => {

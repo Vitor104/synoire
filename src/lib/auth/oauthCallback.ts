@@ -41,6 +41,25 @@ export function isAuthSessionReady(
   )
 }
 
+/** Skip idle expiry on bootstrap while PKCE OAuth callback is in progress. */
+export function shouldSkipIdleCheckForOAuth(
+  location: Location = window.location,
+): boolean {
+  return isOAuthCallbackUrl(location)
+}
+
+export function getOAuthCallbackError(
+  location: Location = window.location,
+): string | null {
+  const search = new URLSearchParams(location.search)
+  return search.get('error_description') ?? search.get('error')
+}
+
+export const OAUTH_PENDING_STORAGE_KEY = 'synoire_oauth_pending'
+
+export const OAUTH_SESSION_FAILED_MESSAGE =
+  'Não foi possível concluir o login com Google. Verifique se a data e hora do seu dispositivo estão corretas e tente novamente.'
+
 /** Remove OAuth query/hash params after session is established. */
 export function clearOAuthCallbackFromUrl(location: Location = window.location): void {
   const url = new URL(location.href)

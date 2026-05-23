@@ -17,7 +17,6 @@ import {
   listUserHubs,
   type HubView,
 } from '@/lib/hubs'
-import { getSupabase } from '@/lib/supabase'
 
 const HUB_LIMIT_PAYWALL_MESSAGE =
   'Glow users podem focar em concursos ilimitados.'
@@ -52,10 +51,6 @@ export function JoinedHubsProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
       return
     }
-    // #region agent log
-    const clientSession = await getSupabase()?.auth.getSession()
-    fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'JoinedHubsContext.tsx:refreshJoined',message:'before listUserHubs',data:{isSessionReady,userId:user.id,hasClientAccessToken:Boolean(clientSession?.data.session?.access_token),clientUserId:clientSession?.data.session?.user?.id??null},timestamp:Date.now(),hypothesisId:'A,C'})}).catch(()=>{});
-    // #endregion
     setIsLoading(true)
     const result = await listUserHubs(user.id)
     if (result.ok) {

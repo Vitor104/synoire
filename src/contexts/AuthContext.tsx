@@ -15,6 +15,8 @@ import {
   isAuthSessionReady,
   isOAuthCallbackUrl,
   shouldIgnoreAuthSessionDuringOAuth,
+  OAUTH_PENDING_STORAGE_KEY,
+  shouldSkipIdleCheckForOAuth,
 } from '@/lib/auth/oauthCallback'
 import {
   clearLastActivity,
@@ -56,6 +58,11 @@ function applySession(
 ) {
   setSession(nextSession)
   setUser(nextSession?.user ?? null)
+}
+
+function clearOAuthPendingFlag(): void {
+  if (typeof sessionStorage === 'undefined') return
+  sessionStorage.removeItem(OAUTH_PENDING_STORAGE_KEY)
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -106,14 +113,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
     const pendingOAuth = pendingOAuthRef.current
 
-    const finishLoading = (reason: string) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'AuthContext.tsx:finishLoading',message:'auth loading finished',data:{reason,pendingOAuth:pendingOAuthRef.current},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
+    const finishLoading = () => {
       if (!cancelled) setIsLoading(false)
     }
 
+    const shouldSkipIdleCheck = (): boolean =>
+      pendingOAuthRef.current ||
+      hasOAuthCodeInUrl() ||
+      shouldSkipIdleCheckForOAuth()
+
     const checkIdleAndExpire = async (): Promise<boolean> => {
+      if (shouldSkipIdleCheck()) return false
       if (!isIdleExpired()) return false
       await expireIdleSession()
       return true
@@ -123,47 +133,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!pendingOAuthRef.current) return
       pendingOAuthRef.current = false
       setIsOAuthExchanging(false)
+      clearOAuthPendingFlag()
       if (nextSession?.access_token) {
+        touchLastActivity()
+        lastActivityTouchRef.current = Date.now()
         clearOAuthCallbackFromUrl()
       }
     }
 
     void (async () => {
-      if (await checkIdleAndExpire()) {
-        finishLoading('idle-expired')
+      if (pendingOAuth || shouldSkipIdleCheckForOAuth()) {
         return
       }
 
-      if (pendingOAuth) {
-        // #region agent log
-        fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'AuthContext.tsx:getSession-skip',message:'skipped getSession during OAuth callback',data:{pendingOAuth:true},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
+      if (await checkIdleAndExpire()) {
+        finishLoading()
         return
       }
 
       const { data } = await supabase.auth.getSession()
       if (cancelled) return
 
-      // #region agent log
-      fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'AuthContext.tsx:getSession',message:'initial getSession',data:{hasAccessToken:Boolean(data.session?.access_token),hasUser:Boolean(data.session?.user)},timestamp:Date.now(),hypothesisId:'A,I'})}).catch(()=>{});
-      // #endregion
-
       if (data.session) {
         touchLastActivity()
       }
 
       applySession(data.session, setSession, setUser)
-      finishLoading('initial-getSession')
+      finishLoading()
     })()
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       if (cancelled) return
-
-      // #region agent log
-      fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'AuthContext.tsx:onAuthStateChange',message:'auth state change',data:{event,hasAccessToken:Boolean(nextSession?.access_token),hasUser:Boolean(nextSession?.user),pendingOAuth:pendingOAuthRef.current},timestamp:Date.now(),hypothesisId:'B,D'})}).catch(()=>{});
-      // #endregion
 
       if (nextSession?.user && ACTIVITY_TOUCH_EVENTS.includes(event)) {
         touchLastActivity()
@@ -179,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pendingOAuthRef.current = false
         setIsOAuthExchanging(false)
         clearOAuthCallbackFromUrl()
-        finishLoading('auth-state-no-user')
+        finishLoading()
         return
       }
 
@@ -188,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (await checkIdleAndExpire()) {
-        finishLoading('auth-state-idle-expired')
+        finishLoading()
         return
       }
 
@@ -202,7 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         finishOAuthCallback(nextSession)
       }
 
-      finishLoading(`auth-state-${event}`)
+      finishLoading()
     })
 
     const onActivity = () => {
@@ -222,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('pointerdown', onActivity)
 
     const idleInterval = window.setInterval(() => {
+      if (shouldSkipIdleCheck()) return
       void supabase.auth.getSession().then(({ data }) => {
         if (!data.session?.user || cancelled) return
         if (isIdleExpired()) {
@@ -291,6 +294,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut({ scope: 'global' })
     }
     clearLastActivity()
+    clearOAuthPendingFlag()
     applySession(null, setSession, setUser)
   }, [])
 

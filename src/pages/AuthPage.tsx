@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   MIN_PASSWORD_LENGTH,
@@ -10,6 +10,12 @@ import {
   validateSignInInput,
   validateSignUpInput,
 } from '@/lib/auth'
+import {
+  clearOAuthCallbackFromUrl,
+  getOAuthCallbackError,
+  OAUTH_PENDING_STORAGE_KEY,
+  OAUTH_SESSION_FAILED_MESSAGE,
+} from '@/lib/auth/oauthCallback'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import {
   pageStaggerContainer,
@@ -26,6 +32,7 @@ const inputClass =
 
 export function AuthPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const supabaseReady = isSupabaseConfigured && getSupabase()
   const reduced = usePrefersReducedMotion()
@@ -46,6 +53,30 @@ export function AuthPage() {
       navigate('/painel', { replace: true })
     }
   }, [authLoading, isAuthenticated, supabaseReady, navigate])
+
+  useEffect(() => {
+    const urlError = getOAuthCallbackError()
+    if (urlError) {
+      setError(urlError)
+      clearOAuthCallbackFromUrl()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (authLoading || isAuthenticated) return
+
+    const hadOAuthPending =
+      typeof sessionStorage !== 'undefined' &&
+      sessionStorage.getItem(OAUTH_PENDING_STORAGE_KEY) === '1'
+    if (!hadOAuthPending) return
+
+    sessionStorage.removeItem(OAUTH_PENDING_STORAGE_KEY)
+    const fromPainel =
+      (location.state as { from?: string } | null)?.from === '/painel'
+    if (fromPainel) {
+      setError(OAUTH_SESSION_FAILED_MESSAGE)
+    }
+  }, [authLoading, isAuthenticated, location.state])
 
   const goToPainel = () => {
     navigate('/painel')

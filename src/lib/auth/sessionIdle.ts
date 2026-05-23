@@ -26,9 +26,9 @@ export function clearLastActivity(): void {
   localStorage.removeItem(LAST_ACTIVITY_STORAGE_KEY)
 }
 
-/** True when there is no recorded activity or it is older than the idle window. */
+/** True when recorded activity is older than the idle window. No record = not expired. */
 export function isIdleExpired(now: number = Date.now()): boolean {
   const last = getLastActivityAt()
-  if (last === null) return true
+  if (last === null) return false
   return now - last >= SESSION_IDLE_MS
 }

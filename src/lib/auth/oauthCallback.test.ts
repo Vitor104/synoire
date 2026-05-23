@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getOAuthCallbackError,
   hasOAuthCodeInUrl,
   isAuthSessionReady,
   isOAuthCallbackUrl,
   shouldIgnoreAuthSessionDuringOAuth,
+  shouldSkipIdleCheckForOAuth,
 } from './oauthCallback'
 
-function mockLocation(parts: { search?: string; hash?: string }): Location {
+function mockLocation(parts: { search?: string; hash?: string } = {}): Location {
   return {
     search: parts.search ?? '',
     hash: parts.hash ?? '',
@@ -78,6 +80,32 @@ describe('shouldIgnoreAuthSessionDuringOAuth', () => {
         mockLocation({ search: '' }),
       ),
     ).toBe(false)
+  })
+})
+
+describe('shouldSkipIdleCheckForOAuth', () => {
+  it('is true during PKCE callback URL', () => {
+    expect(
+      shouldSkipIdleCheckForOAuth(mockLocation({ search: '?code=abc' })),
+    ).toBe(true)
+  })
+
+  it('is false on normal URLs', () => {
+    expect(shouldSkipIdleCheckForOAuth(mockLocation())).toBe(false)
+  })
+})
+
+describe('getOAuthCallbackError', () => {
+  it('returns error_description when present', () => {
+    expect(
+      getOAuthCallbackError(
+        mockLocation({ search: '?error=access_denied&error_description=Denied' }),
+      ),
+    ).toBe('Denied')
+  })
+
+  it('returns null when no error', () => {
+    expect(getOAuthCallbackError(mockLocation())).toBeNull()
   })
 })
 

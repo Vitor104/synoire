@@ -1,5 +1,6 @@
 import { AuthError } from '@supabase/supabase-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { OAUTH_PENDING_STORAGE_KEY } from './oauthCallback'
 import { signInWithGoogle } from './signInWithGoogle'
 
 const signInWithOAuthMock = vi.fn()
@@ -13,6 +14,7 @@ vi.mock('@/lib/supabase', () => ({
 describe('signInWithGoogle', () => {
   beforeEach(() => {
     signInWithOAuthMock.mockReset()
+    sessionStorage.clear()
     vi.stubGlobal('location', { origin: 'http://localhost:5173' })
   })
 
@@ -24,6 +26,7 @@ describe('signInWithGoogle', () => {
       provider: 'google',
       options: { redirectTo: 'http://localhost:5173/painel' },
     })
+    expect(sessionStorage.getItem(OAUTH_PENDING_STORAGE_KEY)).toBe('1')
   })
 
   it('maps errors', async () => {

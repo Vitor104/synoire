@@ -15,7 +15,11 @@ export {
 } from './sessionIdle'
 export {
   clearOAuthCallbackFromUrl,
+  getOAuthCallbackError,
   isAuthSessionReady,
   isOAuthCallbackUrl,
+  OAUTH_PENDING_STORAGE_KEY,
+  OAUTH_SESSION_FAILED_MESSAGE,
+  shouldSkipIdleCheckForOAuth,
 } from './oauthCallback'
 export { signUp, type SignUpInput, type SignUpResult } from './signUp'
