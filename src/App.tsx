@@ -16,6 +16,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { HomePage } from '@/pages/HomePage'
 import { HubDetailPage } from '@/pages/HubDetailPage'
 import { HubsPage } from '@/pages/HubsPage'
+import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { RoomPage } from '@/pages/RoomPage'
 
@@ -24,6 +25,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/entrar" element={<AuthPage />} />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<AuthenticatedPresenceSync />}>
           <Route path="/salas/:roomId" element={<RoomPage />} />

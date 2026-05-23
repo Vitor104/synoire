@@ -4,7 +4,7 @@ import { FireflyIcon } from '@/components/landing/FireflyIcon'
 const LINKS = [
   { label: 'Produto', href: '/hubs' },
   { label: 'Sobre', href: '#' },
-  { label: 'Privacidade', href: '#' },
+  { label: 'Política de Privacidade', href: '/privacy' },
   { label: 'Termos', href: '#' },
 ] as const
 
