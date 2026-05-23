@@ -11,8 +11,10 @@ import {
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import {
   clearOAuthCallbackFromUrl,
+  hasOAuthCodeInUrl,
   isAuthSessionReady,
   isOAuthCallbackUrl,
+  shouldIgnoreAuthSessionDuringOAuth,
 } from '@/lib/auth/oauthCallback'
 import {
   clearLastActivity,
@@ -60,8 +62,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured)
+  const [isOAuthExchanging, setIsOAuthExchanging] = useState(() =>
+    isOAuthCallbackUrl(),
+  )
+  const [clientTokenReady, setClientTokenReady] = useState(false)
   const lastActivityTouchRef = useRef(0)
   const pendingOAuthRef = useRef(isOAuthCallbackUrl())
+
+  useEffect(() => {
+    if (!isOAuthExchanging) return
+    const search = new URLSearchParams(window.location.search)
+    if (search.has('error') && !search.has('code')) {
+      pendingOAuthRef.current = false
+      setIsOAuthExchanging(false)
+      clearOAuthCallbackFromUrl()
+      setIsLoading(false)
+    }
+  }, [isOAuthExchanging])
 
   const expireIdleSession = useCallback(async () => {
     const supabase = getSupabase()
@@ -89,7 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
     const pendingOAuth = pendingOAuthRef.current
 
-    const finishLoading = () => {
+    const finishLoading = (reason: string) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'AuthContext.tsx:finishLoading',message:'auth loading finished',data:{reason,pendingOAuth:pendingOAuthRef.current},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       if (!cancelled) setIsLoading(false)
     }
 
@@ -100,8 +120,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const finishOAuthCallback = (nextSession: Session | null) => {
-      if (!pendingOAuth) return
+      if (!pendingOAuthRef.current) return
       pendingOAuthRef.current = false
+      setIsOAuthExchanging(false)
       if (nextSession?.access_token) {
         clearOAuthCallbackFromUrl()
       }
@@ -109,23 +130,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       if (await checkIdleAndExpire()) {
-        finishLoading()
+        finishLoading('idle-expired')
         return
       }
 
       if (pendingOAuth) {
+        // #region agent log
+        fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'AuthContext.tsx:getSession-skip',message:'skipped getSession during OAuth callback',data:{pendingOAuth:true},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
         return
       }
 
       const { data } = await supabase.auth.getSession()
       if (cancelled) return
 
+      // #region agent log
+      fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'AuthContext.tsx:getSession',message:'initial getSession',data:{hasAccessToken:Boolean(data.session?.access_token),hasUser:Boolean(data.session?.user)},timestamp:Date.now(),hypothesisId:'A,I'})}).catch(()=>{});
+      // #endregion
+
       if (data.session) {
         touchLastActivity()
       }
 
       applySession(data.session, setSession, setUser)
-      finishLoading()
+      finishLoading('initial-getSession')
     })()
 
     const {
@@ -133,24 +161,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       if (cancelled) return
 
+      // #region agent log
+      fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'AuthContext.tsx:onAuthStateChange',message:'auth state change',data:{event,hasAccessToken:Boolean(nextSession?.access_token),hasUser:Boolean(nextSession?.user),pendingOAuth:pendingOAuthRef.current},timestamp:Date.now(),hypothesisId:'B,D'})}).catch(()=>{});
+      // #endregion
+
       if (nextSession?.user && ACTIVITY_TOUCH_EVENTS.includes(event)) {
         touchLastActivity()
         lastActivityTouchRef.current = Date.now()
       }
 
       if (!nextSession?.user) {
+        if (hasOAuthCodeInUrl()) {
+          return
+        }
         clearLastActivity()
         applySession(null, setSession, setUser)
-        if (pendingOAuthRef.current) {
-          pendingOAuthRef.current = false
-          clearOAuthCallbackFromUrl()
-        }
-        finishLoading()
+        pendingOAuthRef.current = false
+        setIsOAuthExchanging(false)
+        clearOAuthCallbackFromUrl()
+        finishLoading('auth-state-no-user')
+        return
+      }
+
+      if (shouldIgnoreAuthSessionDuringOAuth(event, nextSession)) {
         return
       }
 
       if (await checkIdleAndExpire()) {
-        finishLoading()
+        finishLoading('auth-state-idle-expired')
         return
       }
 
@@ -164,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         finishOAuthCallback(nextSession)
       }
 
-      finishLoading()
+      finishLoading(`auth-state-${event}`)
     })
 
     const onActivity = () => {
@@ -203,6 +241,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [expireIdleSession, throttledTouchActivity])
 
+  useEffect(() => {
+    const supabase = getSupabase()
+    if (
+      !supabase ||
+      isLoading ||
+      isOAuthExchanging ||
+      !session?.access_token ||
+      !session.user?.id
+    ) {
+      setClientTokenReady(false)
+      return
+    }
+
+    let cancelled = false
+    const userId = session.user.id
+
+    const verifyClientSession = () => {
+      void supabase.auth.getSession().then(({ data }) => {
+        if (cancelled) return
+        const ready = Boolean(
+          data.session?.access_token && data.session.user?.id === userId,
+        )
+        setClientTokenReady(ready)
+      })
+    }
+
+    verifyClientSession()
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      verifyClientSession()
+    })
+
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
+  }, [
+    session?.access_token,
+    session?.user?.id,
+    isLoading,
+    isOAuthExchanging,
+  ])
+
   const signOut = useCallback(async () => {
     const supabase = getSupabase()
     if (supabase) {
@@ -213,19 +295,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const isSessionReady = isSupabaseConfigured
-    ? isAuthSessionReady(session, isLoading)
+    ? isAuthSessionReady(session, isLoading, isOAuthExchanging) &&
+      clientTokenReady
     : !isLoading
 
   const value = useMemo(
     () => ({
       user,
       session,
-      isLoading,
+      isLoading: isLoading || isOAuthExchanging,
       isAuthenticated: Boolean(session?.user),
       isSessionReady,
       signOut,
     }),
-    [user, session, isLoading, isSessionReady, signOut],
+    [user, session, isLoading, isOAuthExchanging, isSessionReady, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

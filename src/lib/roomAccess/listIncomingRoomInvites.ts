@@ -82,6 +82,11 @@ export async function listIncomingRoomInvitesSupabase(
     return { ok: false, message: 'Supabase não configurado.' }
   }
 
+  const { data: sessionData } = await supabase.auth.getSession()
+  // #region agent log
+  fetch('http://127.0.0.1:7355/ingest/d6106c7d-b1bd-4a41-bd9b-f9b65c9695ca',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e17dc1'},body:JSON.stringify({sessionId:'e17dc1',location:'listIncomingRoomInvites.ts:before-query',message:'listIncoming client session',data:{userId,hasClientAccessToken:Boolean(sessionData.session?.access_token),clientUserId:sessionData.session?.user?.id??null,userIdMatch:sessionData.session?.user?.id===userId},timestamp:Date.now(),hypothesisId:'A,E,I'})}).catch(()=>{});
+  // #endregion
+
   const { data, error } = await supabase
     .from('room_access')
     .select('room_id, created_at, rooms(id, name, is_private, creator_id)')

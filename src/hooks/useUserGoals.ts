@@ -17,13 +17,14 @@ export function useUserGoals() {
   const [isCreating, setIsCreating] = useState(false)
 
   const refresh = useCallback(async () => {
-    const userId = user?.id
-    if (!userId) {
+    if (!isSessionReady || !user?.id) {
       setGoals([])
       setError(null)
       setIsLoading(false)
       return
     }
+
+    const userId = user.id
 
     setIsLoading(true)
     setError(null)
@@ -47,7 +48,7 @@ export function useUserGoals() {
       setError(goalsResult.message)
     }
     setIsLoading(false)
-  }, [user?.id])
+  }, [isSessionReady, user?.id])
 
   useEffect(() => {
     if (!isSessionReady) return

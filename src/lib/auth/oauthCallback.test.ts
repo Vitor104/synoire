@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { isAuthSessionReady, isOAuthCallbackUrl } from './oauthCallback'
+import {
+  hasOAuthCodeInUrl,
+  isAuthSessionReady,
+  isOAuthCallbackUrl,
+  shouldIgnoreAuthSessionDuringOAuth,
+} from './oauthCallback'
 
 function mockLocation(parts: { search?: string; hash?: string }): Location {
   return {
@@ -30,10 +35,62 @@ describe('isOAuthCallbackUrl', () => {
   })
 })
 
+describe('hasOAuthCodeInUrl', () => {
+  it('detects PKCE code in search', () => {
+    expect(hasOAuthCodeInUrl(mockLocation({ search: '?code=abc' }))).toBe(true)
+  })
+
+  it('returns false without code', () => {
+    expect(hasOAuthCodeInUrl(mockLocation({ search: '?error=denied' }))).toBe(
+      false,
+    )
+  })
+})
+
+describe('shouldIgnoreAuthSessionDuringOAuth', () => {
+  const session = { access_token: 't' } as never
+
+  it('ignores INITIAL_SESSION while code is in URL', () => {
+    expect(
+      shouldIgnoreAuthSessionDuringOAuth(
+        'INITIAL_SESSION',
+        session,
+        mockLocation({ search: '?code=abc' }),
+      ),
+    ).toBe(true)
+  })
+
+  it('accepts SIGNED_IN while code is in URL', () => {
+    expect(
+      shouldIgnoreAuthSessionDuringOAuth(
+        'SIGNED_IN',
+        session,
+        mockLocation({ search: '?code=abc' }),
+      ),
+    ).toBe(false)
+  })
+
+  it('does not ignore after code is gone', () => {
+    expect(
+      shouldIgnoreAuthSessionDuringOAuth(
+        'INITIAL_SESSION',
+        session,
+        mockLocation({ search: '' }),
+      ),
+    ).toBe(false)
+  })
+})
+
 describe('isAuthSessionReady', () => {
   it('is false while loading', () => {
     expect(
       isAuthSessionReady({ access_token: 't' } as never, true),
+    ).toBe(false)
+  })
+
+  it('is false while OAuth exchange is in progress', () => {
+    expect(
+      isAuthSessionReady({ access_token: 't' } as never, false, true),
     ).toBe(false)
   })
 

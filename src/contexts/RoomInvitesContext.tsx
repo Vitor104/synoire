@@ -49,13 +49,13 @@ export function RoomInvitesProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState({ message: '', visible: false })
 
   const refresh = useCallback(async () => {
-    const userId = user?.id
-    if (!userId) {
+    if (!isSessionReady || !user?.id) {
       setIncomingRoomInvites([])
       setIsLoading(false)
       return
     }
 
+    const userId = user.id
     setIsLoading(true)
     const result = await fetchIncomingRoomInvites(userId)
     if (result.ok) {
@@ -64,7 +64,7 @@ export function RoomInvitesProvider({ children }: { children: ReactNode }) {
       setIncomingRoomInvites([])
     }
     setIsLoading(false)
-  }, [user?.id])
+  }, [isSessionReady, user?.id])
 
   useEffect(() => {
     if (!isSessionReady) return
