@@ -5,7 +5,7 @@ const LINKS = [
   { label: 'Produto', href: '/hubs' },
   { label: 'Sobre', href: '#' },
   { label: 'Política de Privacidade', href: '/privacy' },
-  { label: 'Termos', href: '#' },
+  { label: 'Termos de Uso', href: '/terms' },
 ] as const
 
 export function LandingFooter() {

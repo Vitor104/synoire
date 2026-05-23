@@ -334,6 +334,24 @@ export function AuthPage() {
         </button>
       </motion.div>
 
+      <motion.p variants={item} className="mt-6 text-center text-xs text-secondary">
+        Ao criar uma conta, você concorda com nossos{' '}
+        <Link
+          to="/terms"
+          className="text-firefly underline decoration-firefly/40 underline-offset-2 transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-firefly/50"
+        >
+          Termos de Uso
+        </Link>{' '}
+        e{' '}
+        <Link
+          to="/privacy"
+          className="text-firefly underline decoration-firefly/40 underline-offset-2 transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-firefly/50"
+        >
+          Política de Privacidade
+        </Link>
+        .
+      </motion.p>
+
       {demoMode && (
         <motion.div variants={item} className="mt-6 space-y-3 border-t border-border pt-6">
           <p className="text-xs text-secondary">

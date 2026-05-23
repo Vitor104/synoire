@@ -19,6 +19,7 @@ import { HubsPage } from '@/pages/HubsPage'
 import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { RoomPage } from '@/pages/RoomPage'
+import { TermsOfServicePage } from '@/pages/TermsOfServicePage'
 
 export function AppRoutes() {
   return (
@@ -26,6 +27,7 @@ export function AppRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/entrar" element={<AuthPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsOfServicePage />} />
       <Route element={<RequireAuth />}>
         <Route element={<AuthenticatedPresenceSync />}>
           <Route path="/salas/:roomId" element={<RoomPage />} />
