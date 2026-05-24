@@ -1,6 +1,8 @@
 export { createPrivateHub, type CreatePrivateHubInput } from './createPrivateHub'
 export { getHubBySlug } from './getHubBySlug'
 export { joinUserHub } from './joinUserHub'
+export { canJoinHub, type CanJoinHubResult, type CanJoinHubStatus } from './canJoinHub'
+export { buildHubInviteUrl, copyHubInviteUrl } from './hubInviteUrl'
 export { leaveUserHub } from './leaveUserHub'
 export { listHubs } from './listHubs'
 export { listUserHubs } from './listUserHubs'

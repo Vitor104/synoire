@@ -44,6 +44,22 @@ vi.mock('@/hooks/useRoomEntry', () => ({
   }),
 }))
 
+vi.mock('@/hooks/useHubEntry', async () => {
+  const { SAMPLE_HUBS } = await import('@/data/sampleHubs')
+  return {
+    useHubEntry: (slug?: string) => {
+      const hub = SAMPLE_HUBS.find((h) => h.slug === slug) ?? null
+      return {
+        hub,
+        entryStatus: hub ? ('ready' as const) : ('not_found' as const),
+        entryMessage: null,
+        hubLoading: false,
+        refreshEntry: vi.fn(),
+      }
+    },
+  }
+})
+
 vi.mock('@/lib/hubs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/hubs')>()
   const { SAMPLE_HUBS } = await import('@/data/sampleHubs')

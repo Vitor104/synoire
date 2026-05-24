@@ -1,16 +1,16 @@
-export function buildRoomInviteUrl(
-  roomId: string,
+export function buildHubInviteUrl(
+  slug: string,
   origin = typeof window !== 'undefined' ? window.location.origin : '',
   token?: string,
 ): string {
-  const base = `${origin}/salas/${encodeURIComponent(roomId)}`
+  const base = `${origin}/hubs/${encodeURIComponent(slug)}`
   if (!token?.trim()) return base
   const params = new URLSearchParams({ invite: token.trim() })
   return `${base}?${params.toString()}`
 }
 
-export async function copyRoomInviteUrl(roomId: string, token?: string): Promise<boolean> {
-  const url = buildRoomInviteUrl(roomId, undefined, token)
+export async function copyHubInviteUrl(slug: string, token?: string): Promise<boolean> {
+  const url = buildHubInviteUrl(slug, undefined, token)
   if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(url)

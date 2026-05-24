@@ -1,8 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { PartnerAvatar } from '@/components/dashboard/PartnerAvatar'
+import { LockIcon } from '@/components/premium/LockIcon'
 import { AppToast } from '@/components/ui/AppToast'
-import { grantHubAccess, listHubAccess } from '@/lib/hubAccess'
+import { getOrCreateHubInviteToken, grantHubAccess, listHubAccess } from '@/lib/hubAccess'
+import { copyHubInviteUrl } from '@/lib/hubs/hubInviteUrl'
 import type { StudyPartnerView } from '@/lib/studyPartners'
 import {
   pageStaggerContainer,
@@ -13,6 +15,8 @@ type InviteToHubModalProps = {
   open: boolean
   onClose: () => void
   hubId: string
+  hubSlug: string
+  creatorId: string
   partners: StudyPartnerView[]
   prefersReducedMotion: boolean
 }
@@ -21,6 +25,8 @@ export function InviteToHubModal({
   open,
   onClose,
   hubId,
+  hubSlug,
+  creatorId,
   partners,
   prefersReducedMotion,
 }: InviteToHubModalProps) {
@@ -76,6 +82,21 @@ export function InviteToHubModal({
     },
     [hubId],
   )
+
+  const handleCopyInviteLink = useCallback(async () => {
+    const tokenResult = await getOrCreateHubInviteToken(hubId, creatorId)
+    if (!tokenResult.ok) {
+      setToast({ message: tokenResult.message, visible: true })
+      return
+    }
+    const ok = await copyHubInviteUrl(hubSlug, tokenResult.data)
+    setToast({
+      message: ok
+        ? 'Link de convite copiado!'
+        : 'Não foi possível copiar o link. Tente novamente.',
+      visible: true,
+    })
+  }, [hubId, hubSlug, creatorId])
 
   useEffect(() => {
     if (!open) return
@@ -166,6 +187,23 @@ export function InviteToHubModal({
                   })
                 )}
               </motion.ul>
+
+              <motion.div
+                variants={staggerItem}
+                className="shrink-0 border-t border-white/5 px-4 py-4"
+              >
+                <p className="mb-3 text-xs text-secondary">
+                  Ou compartilhe um link com acesso direto ao hub privado:
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyInviteLink()}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-firefly/30 bg-firefly/10 py-3 text-sm font-medium text-firefly transition hover:brightness-110"
+                >
+                  <LockIcon className="h-3.5 w-3.5 opacity-80" aria-hidden />
+                  Copiar link de convite
+                </button>
+              </motion.div>
 
               <motion.div
                 variants={staggerItem}

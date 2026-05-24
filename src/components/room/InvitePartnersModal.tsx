@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { PartnerAvatar } from '@/components/dashboard/PartnerAvatar'
+import { LockIcon } from '@/components/premium/LockIcon'
 import { AppToast } from '@/components/ui/AppToast'
 import { copyRoomInviteUrl } from '@/lib/hubRooms/roomInviteUrl'
 import type { StudyPartnerView } from '@/lib/studyPartners'
-import { grantRoomAccess, listRoomAccess } from '@/lib/roomAccess'
+import { getOrCreateRoomInviteToken, grantRoomAccess, listRoomAccess } from '@/lib/roomAccess'
 import {
   pageStaggerContainer,
   pageStaggerItem,
@@ -16,6 +17,7 @@ type InvitePartnersModalProps = {
   open: boolean
   onClose: () => void
   roomId: string
+  creatorId: string
   variant: InvitePartnersModalVariant
   partners: StudyPartnerView[]
   prefersReducedMotion: boolean
@@ -41,6 +43,7 @@ export function InvitePartnersModal({
   open,
   onClose,
   roomId,
+  creatorId,
   variant,
   partners,
   prefersReducedMotion,
@@ -101,6 +104,22 @@ export function InvitePartnersModal({
   )
 
   const handleCopyLink = useCallback(async () => {
+    if (isPrivate) {
+      const tokenResult = await getOrCreateRoomInviteToken(roomId, creatorId)
+      if (!tokenResult.ok) {
+        setToast({ message: tokenResult.message, visible: true })
+        return
+      }
+      const ok = await copyRoomInviteUrl(roomId, tokenResult.data)
+      setToast({
+        message: ok
+          ? 'Link de convite copiado!'
+          : 'Não foi possível copiar o link. Tente novamente.',
+        visible: true,
+      })
+      return
+    }
+
     const ok = await copyRoomInviteUrl(roomId)
     setToast({
       message: ok
@@ -108,7 +127,7 @@ export function InvitePartnersModal({
         : 'Não foi possível copiar o link. Tente novamente.',
       visible: true,
     })
-  }, [roomId])
+  }, [roomId, creatorId, isPrivate])
 
   useEffect(() => {
     if (!open) return
@@ -154,49 +173,67 @@ export function InvitePartnersModal({
               </motion.div>
 
               {isPrivate ? (
-                <motion.ul
-                  variants={staggerItem}
-                  className="min-h-0 flex-1 overflow-y-auto px-4 py-2"
-                >
-                  {listLoading ? (
-                    <li className="px-2 py-6 text-center text-sm text-secondary">
-                      Carregando convites…
-                    </li>
-                  ) : partners.length === 0 ? (
-                    <li className="px-2 py-6 text-center text-sm text-secondary">
-                      Você ainda não tem parceiros aceitos.
-                    </li>
-                  ) : (
-                    partners.map((partner) => {
-                      const sent = grantedIds.has(partner.id)
-                      return (
-                        <li
-                          key={partner.id}
-                          className="flex items-center gap-3 rounded-xl px-2 py-2.5"
-                        >
-                          <PartnerAvatar partner={partner} className="h-9 w-9" />
-                          <motion.div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-primary">
-                              {partner.displayName}
-                            </p>
-                            <p className="text-[11px] text-secondary">
-                              🔥 {partner.currentStreak}{' '}
-                              {partner.currentStreak === 1 ? 'dia' : 'dias'}
-                            </p>
-                          </motion.div>
-                          <button
-                            type="button"
-                            disabled={sent}
-                            onClick={() => void handleGrant(partner.id, partner.username)}
-                            className="shrink-0 rounded-lg border border-firefly/30 bg-firefly/10 px-2.5 py-1.5 text-[11px] font-medium text-firefly transition hover:brightness-110 disabled:cursor-default disabled:border-white/10 disabled:bg-white/5 disabled:text-secondary"
+                <>
+                  <motion.ul
+                    variants={staggerItem}
+                    className="min-h-0 flex-1 overflow-y-auto px-4 py-2"
+                  >
+                    {listLoading ? (
+                      <li className="px-2 py-6 text-center text-sm text-secondary">
+                        Carregando convites…
+                      </li>
+                    ) : partners.length === 0 ? (
+                      <li className="px-2 py-6 text-center text-sm text-secondary">
+                        Você ainda não tem parceiros aceitos.
+                      </li>
+                    ) : (
+                      partners.map((partner) => {
+                        const sent = grantedIds.has(partner.id)
+                        return (
+                          <li
+                            key={partner.id}
+                            className="flex items-center gap-3 rounded-xl px-2 py-2.5"
                           >
-                            {sent ? 'Enviado' : 'Enviar Convite'}
-                          </button>
-                        </li>
-                      )
-                    })
-                  )}
-                </motion.ul>
+                            <PartnerAvatar partner={partner} className="h-9 w-9" />
+                            <motion.div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-primary">
+                                {partner.displayName}
+                              </p>
+                              <p className="text-[11px] text-secondary">
+                                🔥 {partner.currentStreak}{' '}
+                                {partner.currentStreak === 1 ? 'dia' : 'dias'}
+                              </p>
+                            </motion.div>
+                            <button
+                              type="button"
+                              disabled={sent}
+                              onClick={() => void handleGrant(partner.id, partner.username)}
+                              className="shrink-0 rounded-lg border border-firefly/30 bg-firefly/10 px-2.5 py-1.5 text-[11px] font-medium text-firefly transition hover:brightness-110 disabled:cursor-default disabled:border-white/10 disabled:bg-white/5 disabled:text-secondary"
+                            >
+                              {sent ? 'Enviado' : 'Enviar Convite'}
+                            </button>
+                          </li>
+                        )
+                      })
+                    )}
+                  </motion.ul>
+                  <motion.div
+                    variants={staggerItem}
+                    className="shrink-0 border-t border-white/5 px-4 py-4"
+                  >
+                    <p className="mb-3 text-xs text-secondary">
+                      Ou compartilhe um link com acesso direto à sala privada:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyLink()}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-firefly/30 bg-firefly/10 py-3 text-sm font-medium text-firefly transition hover:brightness-110"
+                    >
+                      <LockIcon className="h-3.5 w-3.5 opacity-80" aria-hidden />
+                      Copiar link de convite
+                    </button>
+                  </motion.div>
+                </>
               ) : (
                 <motion.div variants={staggerItem} className="px-6 py-6">
                   <button

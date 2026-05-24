@@ -1,5 +1,10 @@
 export { canJoinRoom, type CanJoinRoomResult, type CanJoinRoomStatus } from './canJoinRoom'
 export {
+  getOrCreateRoomInviteToken,
+  redeemRoomInviteToken,
+  type InviteTokenResult,
+} from './roomInviteTokens'
+export {
   fetchIncomingRoomInvites,
   grantRoomAccess,
   hasRoomAccess,

@@ -16,6 +16,7 @@ import {
   OAUTH_PENDING_STORAGE_KEY,
   OAUTH_SESSION_FAILED_MESSAGE,
 } from '@/lib/auth/oauthCallback'
+import { resolvePostAuthRedirect } from '@/lib/auth/resolvePostAuthRedirect'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import {
   pageStaggerContainer,
@@ -48,11 +49,15 @@ export function AuthPage() {
   const [info, setInfo] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const postAuthPath = resolvePostAuthRedirect(
+    (location.state as { from?: string } | null)?.from,
+  )
+
   useEffect(() => {
     if (!authLoading && isAuthenticated && supabaseReady) {
-      navigate('/painel', { replace: true })
+      navigate(postAuthPath, { replace: true })
     }
-  }, [authLoading, isAuthenticated, supabaseReady, navigate])
+  }, [authLoading, isAuthenticated, supabaseReady, navigate, postAuthPath])
 
   useEffect(() => {
     const urlError = getOAuthCallbackError()
@@ -79,7 +84,7 @@ export function AuthPage() {
   }, [authLoading, isAuthenticated, location.state])
 
   const goToPainel = () => {
-    navigate('/painel')
+    navigate(postAuthPath)
   }
 
   const switchMode = (next: AuthMode) => {
@@ -111,7 +116,7 @@ export function AuthPage() {
         setError(result.message)
         return
       }
-      navigate('/painel')
+      navigate(postAuthPath)
       return
     }
 
@@ -136,7 +141,7 @@ export function AuthPage() {
       setInfo('Enviamos um link de confirmação para seu e-mail. Confirme antes de entrar.')
       return
     }
-    navigate('/painel')
+    navigate(postAuthPath)
   }
 
   const handleGoogleSignIn = async () => {

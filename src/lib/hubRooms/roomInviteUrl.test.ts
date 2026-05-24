@@ -13,4 +13,10 @@ describe('buildRoomInviteUrl', () => {
       'http://localhost:5173/salas/a%2Fb%20c',
     )
   })
+
+  it('appends invite token query param when provided', () => {
+    expect(buildRoomInviteUrl('room-abc', 'https://synoire.app', 'tok123')).toBe(
+      'https://synoire.app/salas/room-abc?invite=tok123',
+    )
+  })
 })

@@ -25,3 +25,8 @@ export function writeJoinedHubSlugs(slugs: string[]): void {
 export function isHubJoined(slug: string, joinedSlugs: string[]): boolean {
   return joinedSlugs.includes(slug)
 }
+
+export function clearJoinedHubsForTests(): void {
+  if (typeof localStorage === 'undefined') return
+  localStorage.removeItem(JOINED_HUBS_STORAGE_KEY)
+}

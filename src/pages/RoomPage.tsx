@@ -56,8 +56,10 @@ function initialSessionMode(state: unknown): SessionMode {
 
 function roomEntrySubtitle(status: RoomEntryStatus): string {
   switch (status) {
+    case 'invalid_invite':
+      return 'Link de convite inválido ou expirado.'
     case 'denied_private':
-      return 'Peça um convite ao criador da sala para entrar.'
+      return 'Peça um link de convite ao criador da sala para entrar.'
     case 'not_found':
       return 'A sala não existe ou não está mais disponível.'
     case 'error':
@@ -218,7 +220,7 @@ export function RoomPage() {
     studyRoom && (!studyRoom.is_private || isRoomCreator),
   )
   const inviteLabel = studyRoom?.is_private
-    ? 'Convidar parceiros'
+    ? 'Copiar link de convite'
     : 'Compartilhar sala'
 
   const handleInvitePartnersClick = useCallback(() => {
@@ -520,6 +522,7 @@ export function RoomPage() {
           open={invitePartnersOpen}
           onClose={() => setInvitePartnersOpen(false)}
           roomId={roomId}
+          creatorId={user?.id ?? ''}
           variant={studyRoom.is_private ? 'private' : 'public'}
           partners={acceptedPartners}
           prefersReducedMotion={prefersReducedMotion}
