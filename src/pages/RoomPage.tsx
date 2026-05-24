@@ -15,6 +15,7 @@ import { useStudyPartners } from '@/contexts/StudyPartnersContext'
 import { useAuthenticatedGlobalPresence } from '@/hooks/useAuthenticatedGlobalPresence'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { useGlobalRoomTimer } from '@/hooks/useGlobalRoomTimer'
+import { useTabTimerTitle } from '@/hooks/useTabTimerTitle'
 import { useTimerSounds } from '@/hooks/useTimerSounds'
 import { useImmersiveTheme } from '@/hooks/useImmersiveTheme'
 import { usePartialStudyTracking } from '@/hooks/usePartialStudyTracking'
@@ -108,6 +109,12 @@ export function RoomPage() {
     cycle,
   } = timer
   useTimerSounds({ remainingSeconds, isIdle, enabled: entryStatus === 'ready' })
+  useTabTimerTitle({
+    remainingSeconds,
+    phase,
+    isIdle,
+    enabled: entryStatus === 'ready',
+  })
   const { recordSession } = useStudySessions()
 
   const [sessionMode, setSessionMode] = useState<SessionMode>(() =>
