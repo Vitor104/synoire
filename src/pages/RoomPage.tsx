@@ -14,6 +14,7 @@ import { useStudyPartners } from '@/contexts/StudyPartnersContext'
 import { useAuthenticatedGlobalPresence } from '@/hooks/useAuthenticatedGlobalPresence'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { useGlobalRoomTimer } from '@/hooks/useGlobalRoomTimer'
+import { useTimerSounds } from '@/hooks/useTimerSounds'
 import { useImmersiveTheme } from '@/hooks/useImmersiveTheme'
 import { usePartialStudyTracking } from '@/hooks/usePartialStudyTracking'
 import { useRecordStudySession } from '@/hooks/useRecordStudySession'
@@ -105,6 +106,7 @@ export function RoomPage() {
     startedAt,
     cycle,
   } = timer
+  useTimerSounds({ remainingSeconds, isIdle, enabled: entryStatus === 'ready' })
   const { recordSession } = useStudySessions()
 
   const [sessionMode, setSessionMode] = useState<SessionMode>(() =>
@@ -241,12 +243,11 @@ export function RoomPage() {
     setSyncFlashUntil(until)
     setRitualGlow(true)
     setTimerRitualFade(true)
-    void sound.playFocusChime()
     window.setTimeout(() => {
       setRitualGlow(false)
       setTimerRitualFade(false)
     }, RITUAL_MS)
-  }, [prefersReducedMotion, sound])
+  }, [prefersReducedMotion])
 
   const bumpChrome = useCallback(() => {
     setChromeLit(true)
