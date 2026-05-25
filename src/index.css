@@ -22,6 +22,8 @@
 @layer base {
   html {
     @apply antialiased;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(163, 163, 79, 0.65) rgba(18, 18, 16, 0.92);
   }
 
   body {
@@ -38,6 +40,40 @@
 
   #root {
     @apply min-h-dvh;
+  }
+
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: rgba(18, 18, 16, 0.92);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 2px solid rgba(18, 18, 16, 0.92);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(163, 163, 79, 0.82), rgba(107, 143, 122, 0.62));
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(182, 182, 98, 0.92), rgba(128, 165, 138, 0.78));
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: rgba(18, 18, 16, 0.92);
   }
 }
 

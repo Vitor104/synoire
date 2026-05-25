@@ -235,7 +235,7 @@ export function GlowPaywallModal() {
                   </div>
                 </section>
 
-                <section className="relative flex flex-col overflow-hidden rounded-2xl border border-firefly/35 bg-gradient-to-br from-firefly/10 via-panel to-elevated p-5 shadow-[0_0_30px_-10px_rgba(163,163,79,0.35)] sm:p-6">
+                <section className="relative flex flex-col overflow-visible rounded-2xl border border-firefly/35 bg-gradient-to-br from-firefly/10 via-panel to-elevated p-5 shadow-[0_0_30px_-10px_rgba(163,163,79,0.35)] sm:p-6">
                   <span className="absolute right-5 top-0 -translate-y-1/2 rounded-full border border-firefly/40 bg-firefly px-3 py-1 text-[10px] font-bold uppercase tracking-[0.28em] text-night">
                     Premium
                   </span>
