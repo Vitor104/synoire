@@ -3,7 +3,6 @@ import { isHubJoined, readJoinedHubSlugs, writeJoinedHubSlugs } from '@/lib/join
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { grantHubAccess } from './client'
 import {
-  generateInviteToken,
   getOrCreateHubInviteTokenLocal,
   redeemHubInviteTokenLocal,
 } from './inviteTokenStorage'
@@ -14,16 +13,15 @@ export type InviteTokenResult<T> =
 
 export async function getOrCreateHubInviteToken(
   hubId: string,
-  creatorId: string,
 ): Promise<InviteTokenResult<string>> {
-  if (!hubId.trim() || !creatorId.trim()) {
+  if (!hubId.trim()) {
     return { ok: false, message: 'Hub inválido.' }
   }
 
   if (isDemoMode || !isSupabaseConfigured) {
     return {
       ok: true,
-      data: getOrCreateHubInviteTokenLocal(hubId, creatorId),
+      data: getOrCreateHubInviteTokenLocal(hubId, hubId),
     }
   }
 
@@ -31,46 +29,24 @@ export async function getOrCreateHubInviteToken(
   if (!supabase) {
     return {
       ok: true,
-      data: getOrCreateHubInviteTokenLocal(hubId, creatorId),
+      data: getOrCreateHubInviteTokenLocal(hubId, hubId),
     }
   }
 
-  const { data: existing, error: selectError } = await supabase
-    .from('hub_invite_tokens')
-    .select('token')
-    .eq('hub_id', hubId)
-    .maybeSingle()
-
-  if (selectError) {
-    if (import.meta.env.DEV) console.error('[hubInviteTokens get]', selectError)
-    return { ok: false, message: 'Não foi possível gerar o link de convite.' }
-  }
-
-  if (existing?.token) {
-    return { ok: true, data: existing.token as string }
-  }
-
-  const token = generateInviteToken()
-  const { error: insertError } = await supabase.from('hub_invite_tokens').insert({
-    hub_id: hubId,
-    token,
-    created_by: creatorId,
+  const { data, error } = await supabase.rpc('get_or_create_hub_invite_token', {
+    p_hub_id: hubId,
   })
 
-  if (insertError) {
-    if (insertError.code === '23505') {
-      const { data: retry } = await supabase
-        .from('hub_invite_tokens')
-        .select('token')
-        .eq('hub_id', hubId)
-        .maybeSingle()
-      if (retry?.token) return { ok: true, data: retry.token as string }
-    }
-    if (import.meta.env.DEV) console.error('[hubInviteTokens insert]', insertError)
+  if (error) {
+    if (import.meta.env.DEV) console.error('[hubInviteTokens get]', error)
     return { ok: false, message: 'Não foi possível gerar o link de convite.' }
   }
 
-  return { ok: true, data: token }
+  if (typeof data !== 'string' || !data.trim()) {
+    return { ok: false, message: 'Não foi possível gerar o link de convite.' }
+  }
+
+  return { ok: true, data }
 }
 
 export async function redeemHubInviteToken(

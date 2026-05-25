@@ -16,7 +16,6 @@ type InviteToHubModalProps = {
   onClose: () => void
   hubId: string
   hubSlug: string
-  creatorId: string
   partners: StudyPartnerView[]
   prefersReducedMotion: boolean
 }
@@ -26,7 +25,6 @@ export function InviteToHubModal({
   onClose,
   hubId,
   hubSlug,
-  creatorId,
   partners,
   prefersReducedMotion,
 }: InviteToHubModalProps) {
@@ -84,7 +82,7 @@ export function InviteToHubModal({
   )
 
   const handleCopyInviteLink = useCallback(async () => {
-    const tokenResult = await getOrCreateHubInviteToken(hubId, creatorId)
+    const tokenResult = await getOrCreateHubInviteToken(hubId)
     if (!tokenResult.ok) {
       setToast({ message: tokenResult.message, visible: true })
       return
@@ -96,7 +94,7 @@ export function InviteToHubModal({
         : 'Não foi possível copiar o link. Tente novamente.',
       visible: true,
     })
-  }, [hubId, hubSlug, creatorId])
+  }, [hubId, hubSlug])
 
   useEffect(() => {
     if (!open) return

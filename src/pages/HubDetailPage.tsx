@@ -60,7 +60,7 @@ export function HubDetailPage() {
 
     if (hub.isPrivate) {
       if (!user?.id) return
-      const tokenResult = await getOrCreateHubInviteToken(hub.id, user.id)
+      const tokenResult = await getOrCreateHubInviteToken(hub.id)
       if (!tokenResult.ok) {
         setToast({ message: tokenResult.message, visible: true })
         return
@@ -279,7 +279,6 @@ export function HubDetailPage() {
           onClose={() => setInviteHubOpen(false)}
           hubId={hub.id}
           hubSlug={hub.slug}
-          creatorId={user!.id}
           partners={acceptedPartners}
           prefersReducedMotion={reduced}
         />

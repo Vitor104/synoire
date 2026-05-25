@@ -2,7 +2,6 @@ import { isDemoMode } from '@/lib/hubRooms/demo'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { grantRoomAccess } from './client'
 import {
-  generateInviteToken,
   getOrCreateRoomInviteTokenLocal,
   redeemRoomInviteTokenLocal,
 } from './inviteTokenStorage'
@@ -13,16 +12,15 @@ export type InviteTokenResult<T> =
 
 export async function getOrCreateRoomInviteToken(
   roomId: string,
-  creatorId: string,
 ): Promise<InviteTokenResult<string>> {
-  if (!roomId.trim() || !creatorId.trim()) {
+  if (!roomId.trim()) {
     return { ok: false, message: 'Sala inválida.' }
   }
 
   if (isDemoMode || !isSupabaseConfigured) {
     return {
       ok: true,
-      data: getOrCreateRoomInviteTokenLocal(roomId, creatorId),
+      data: getOrCreateRoomInviteTokenLocal(roomId, roomId),
     }
   }
 
@@ -30,46 +28,24 @@ export async function getOrCreateRoomInviteToken(
   if (!supabase) {
     return {
       ok: true,
-      data: getOrCreateRoomInviteTokenLocal(roomId, creatorId),
+      data: getOrCreateRoomInviteTokenLocal(roomId, roomId),
     }
   }
 
-  const { data: existing, error: selectError } = await supabase
-    .from('room_invite_tokens')
-    .select('token')
-    .eq('room_id', roomId)
-    .maybeSingle()
-
-  if (selectError) {
-    if (import.meta.env.DEV) console.error('[roomInviteTokens get]', selectError)
-    return { ok: false, message: 'Não foi possível gerar o link de convite.' }
-  }
-
-  if (existing?.token) {
-    return { ok: true, data: existing.token as string }
-  }
-
-  const token = generateInviteToken()
-  const { error: insertError } = await supabase.from('room_invite_tokens').insert({
-    room_id: roomId,
-    token,
-    created_by: creatorId,
+  const { data, error } = await supabase.rpc('get_or_create_room_invite_token', {
+    p_room_id: roomId,
   })
 
-  if (insertError) {
-    if (insertError.code === '23505') {
-      const { data: retry } = await supabase
-        .from('room_invite_tokens')
-        .select('token')
-        .eq('room_id', roomId)
-        .maybeSingle()
-      if (retry?.token) return { ok: true, data: retry.token as string }
-    }
-    if (import.meta.env.DEV) console.error('[roomInviteTokens insert]', insertError)
+  if (error) {
+    if (import.meta.env.DEV) console.error('[roomInviteTokens get]', error)
     return { ok: false, message: 'Não foi possível gerar o link de convite.' }
   }
 
-  return { ok: true, data: token }
+  if (typeof data !== 'string' || !data.trim()) {
+    return { ok: false, message: 'Não foi possível gerar o link de convite.' }
+  }
+
+  return { ok: true, data }
 }
 
 export async function redeemRoomInviteToken(

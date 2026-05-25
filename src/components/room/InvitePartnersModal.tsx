@@ -17,7 +17,6 @@ type InvitePartnersModalProps = {
   open: boolean
   onClose: () => void
   roomId: string
-  creatorId: string
   variant: InvitePartnersModalVariant
   partners: StudyPartnerView[]
   prefersReducedMotion: boolean
@@ -43,7 +42,6 @@ export function InvitePartnersModal({
   open,
   onClose,
   roomId,
-  creatorId,
   variant,
   partners,
   prefersReducedMotion,
@@ -105,7 +103,7 @@ export function InvitePartnersModal({
 
   const handleCopyLink = useCallback(async () => {
     if (isPrivate) {
-      const tokenResult = await getOrCreateRoomInviteToken(roomId, creatorId)
+      const tokenResult = await getOrCreateRoomInviteToken(roomId)
       if (!tokenResult.ok) {
         setToast({ message: tokenResult.message, visible: true })
         return
@@ -127,7 +125,7 @@ export function InvitePartnersModal({
         : 'Não foi possível copiar o link. Tente novamente.',
       visible: true,
     })
-  }, [roomId, creatorId, isPrivate])
+  }, [roomId, isPrivate])
 
   useEffect(() => {
     if (!open) return

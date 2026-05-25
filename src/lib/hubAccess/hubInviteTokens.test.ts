@@ -4,17 +4,43 @@ import {
   clearHubInviteTokensForTests,
   getOrCreateHubInviteTokenLocal,
 } from '@/lib/hubAccess/inviteTokenStorage'
-import { redeemHubInviteToken } from '@/lib/hubAccess/hubInviteTokens'
+import {
+  getOrCreateHubInviteToken,
+  redeemHubInviteToken,
+} from '@/lib/hubAccess/hubInviteTokens'
 import { clearJoinedHubsForTests } from '@/lib/joinedHubs/storage'
 
-vi.mock('@/lib/hubRooms/demo', () => ({ isDemoMode: true }))
+const mocks = vi.hoisted(() => ({
+  state: {
+    demoMode: true,
+    supabaseConfigured: false,
+  },
+  rpc: vi.fn(),
+}))
+
+vi.mock('@/lib/hubRooms/demo', () => ({
+  get isDemoMode() {
+    return mocks.state.demoMode
+  },
+}))
+
 vi.mock('@/lib/supabase', () => ({
-  isSupabaseConfigured: false,
-  getSupabase: () => null,
+  get isSupabaseConfigured() {
+    return mocks.state.supabaseConfigured
+  },
+  getSupabase: () =>
+    mocks.state.supabaseConfigured
+      ? {
+          rpc: mocks.rpc,
+        }
+      : null,
 }))
 
 describe('hubInviteTokens demo', () => {
   beforeEach(() => {
+    mocks.state.demoMode = true
+    mocks.state.supabaseConfigured = false
+    mocks.rpc.mockReset()
     clearHubAccessForTests()
     clearHubInviteTokensForTests()
     clearJoinedHubsForTests()
@@ -32,5 +58,41 @@ describe('hubInviteTokens demo', () => {
     const result = await redeemHubInviteToken('hub-1', 'hub-slug', 'wrong', 'guest-1')
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.data).toBe(false)
+  })
+})
+
+describe('hubInviteTokens supabase', () => {
+  beforeEach(() => {
+    mocks.state.demoMode = false
+    mocks.state.supabaseConfigured = true
+    mocks.rpc.mockReset()
+    clearHubAccessForTests()
+    clearHubInviteTokensForTests()
+    clearJoinedHubsForTests()
+  })
+
+  it('gets the hub token via rpc', async () => {
+    mocks.rpc.mockResolvedValue({ data: 'hub-token', error: null })
+
+    const result = await getOrCreateHubInviteToken('hub-1')
+
+    expect(mocks.rpc).toHaveBeenCalledWith('get_or_create_hub_invite_token', {
+      p_hub_id: 'hub-1',
+    })
+    expect(result).toEqual({ ok: true, data: 'hub-token' })
+  })
+
+  it('returns a friendly error when rpc fails', async () => {
+    mocks.rpc.mockResolvedValue({
+      data: null,
+      error: { message: 'permission denied' },
+    })
+
+    const result = await getOrCreateHubInviteToken('hub-1')
+
+    expect(result).toEqual({
+      ok: false,
+      message: 'Não foi possível gerar o link de convite.',
+    })
   })
 })

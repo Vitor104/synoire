@@ -522,7 +522,6 @@ export function RoomPage() {
           open={invitePartnersOpen}
           onClose={() => setInvitePartnersOpen(false)}
           roomId={roomId}
-          creatorId={user?.id ?? ''}
           variant={studyRoom.is_private ? 'private' : 'public'}
           partners={acceptedPartners}
           prefersReducedMotion={prefersReducedMotion}
