@@ -22,5 +22,8 @@ port = 54323
 [functions.create-checkout]
 verify_jwt = true
 
+[functions.create-portal-session]
+verify_jwt = true
+
 [functions.stripe-webhook]
 verify_jwt = false

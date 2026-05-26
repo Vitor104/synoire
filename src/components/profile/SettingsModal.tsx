@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useUserPlan } from '@/contexts/UserPlanContext'
 import { mapAuthError } from '@/lib/auth/errors'
 import { MIN_PASSWORD_LENGTH, WEAK_PASSWORD_MESSAGE } from '@/lib/auth/constants'
+import { createPortalSession } from '@/lib/billing/createPortalSession'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import {
   pageStaggerContainer,
@@ -36,9 +37,10 @@ export function SettingsModal({
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [isManagingSubscription, setIsManagingSubscription] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
-  const isBusy = isUpdatingPassword || isDeletingAccount
+  const isBusy = isUpdatingPassword || isManagingSubscription || isDeletingAccount
   const staggerC = pageStaggerContainer(prefersReducedMotion)
   const staggerItem = pageStaggerItem(prefersReducedMotion)
 
@@ -90,8 +92,21 @@ export function SettingsModal({
     }
   }, [newPassword, confirmPassword, onToast])
 
-  const handleManageSubscription = useCallback(() => {
-    onToast('Portal de gerenciamento em breve')
+  const handleManageSubscription = useCallback(async () => {
+    setIsManagingSubscription(true)
+    try {
+      const result = await createPortalSession()
+      if (!result.ok) {
+        onToast(result.message)
+        return
+      }
+
+      window.location.href = result.url
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : GENERIC_ERROR)
+    } finally {
+      setIsManagingSubscription(false)
+    }
   }, [onToast])
 
   const handleUpgrade = useCallback(() => {
@@ -213,14 +228,18 @@ export function SettingsModal({
                       <span className="text-xs text-secondary">Plano coletivo</span>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleManageSubscription}
-                    disabled={isBusy}
-                    className="w-full rounded-xl border border-white/10 px-4 py-2.5 text-sm text-secondary transition hover:bg-elevated hover:text-primary disabled:opacity-50"
-                  >
-                    Gerenciar Assinatura
-                  </button>
+                  {planTier === 'glow' && (
+                    <button
+                      type="button"
+                      onClick={() => void handleManageSubscription()}
+                      disabled={isBusy}
+                      className="w-full rounded-xl border border-white/10 px-4 py-2.5 text-sm text-secondary transition hover:bg-elevated hover:text-primary disabled:opacity-50"
+                    >
+                      {isManagingSubscription ?
+                        'Redirecionando...'
+                      : 'Gerenciar Assinatura'}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="mt-4 space-y-4">

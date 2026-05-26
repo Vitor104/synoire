@@ -35,6 +35,7 @@ supabase db push
 | Função | JWT | Descrição |
 |--------|-----|-----------|
 | `create-checkout` | sim | Cria sessão Stripe Checkout para assinatura Glow |
+| `create-portal-session` | sim | Cria sessão segura do Stripe Customer Portal para gerenciar a assinatura Glow |
 | `stripe-webhook` | **não** | Recebe eventos Stripe e atualiza `profiles` |
 
 ### Secrets (Dashboard → Project Settings → Edge Functions)
@@ -58,6 +59,7 @@ Template local: [`functions/.env.example`](functions/.env.example) → copiar pa
 
 ```bash
 supabase functions deploy create-checkout
+supabase functions deploy create-portal-session
 supabase functions deploy stripe-webhook --no-verify-jwt
 ```
 
@@ -69,8 +71,13 @@ Após o deploy, confirme no Dashboard (Edge Functions → `stripe-webhook`) que 
 
 1. Stripe Dashboard → Developers → Webhooks → Add endpoint  
 2. URL: `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`  
-3. Eventos: `checkout.session.completed`, `customer.subscription.deleted`  
+3. Eventos: `checkout.session.completed`, `customer.subscription.deleted`, `customer.subscription.updated`  
 4. Copiar **Signing secret** → secret `STRIPE_WEBHOOK_SECRET`
+
+### Customer Portal
+
+- A função `create-portal-session` reutiliza `STRIPE_SECRET_KEY` e, quando `Origin` não vier na requisição, usa `FRONTEND_URL` como fallback seguro para montar o `return_url`.
+- O retorno do portal aponta para `/perfil`, que é a rota real de perfil/configurações do app.
 
 Se o webhook falhou com 401 antes da correção, reenvie o evento `checkout.session.completed` em **Recent deliveries** → **Resend** (após deploy com JWT desligado). Pagamentos já concluídos podem exigir esse reenvio para preencher `stripe_subscription_id` no perfil.
 

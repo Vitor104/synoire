@@ -1,6 +1,63 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=denonext'
 
+function extractCustomerId(
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null,
+): string | null {
+  return typeof customer === 'string' ? customer : customer?.id ?? null
+}
+
+async function updateProfileByBillingIds(
+  admin: ReturnType<typeof createClient>,
+  updates: { plan_tier?: 'free'; subscription_status: string },
+  subscriptionId: string | null,
+  customerId: string | null,
+  eventType: string,
+) {
+  let query = admin.from('profiles').update(updates)
+
+  if (subscriptionId) {
+    query = query.eq('stripe_subscription_id', subscriptionId)
+  } else if (customerId) {
+    query = query.eq('stripe_customer_id', customerId)
+  } else {
+    console.error(`${eventType}: no ids to match`)
+    return null
+  }
+
+  const { error } = await query
+  if (error) {
+    console.error(`${eventType}: database update failed`, error.message)
+    return new Response('Database update failed', { status: 500 })
+  }
+
+  return null
+}
+
+async function syncSubscriptionStatus(
+  admin: ReturnType<typeof createClient>,
+  subscription: Stripe.Subscription,
+  eventType: string,
+) {
+  const subscriptionId = subscription.id
+  const customerId = extractCustomerId(subscription.customer)
+  const updates: { plan_tier?: 'free'; subscription_status: string } = {
+    subscription_status: subscription.status,
+  }
+
+  if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+    updates.plan_tier = 'free'
+  }
+
+  return updateProfileByBillingIds(
+    admin,
+    updates,
+    subscriptionId,
+    customerId,
+    eventType,
+  )
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
@@ -89,32 +146,18 @@ Deno.serve(async (req) => {
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
-        const subscriptionId = subscription.id
-        const customerId =
-          typeof subscription.customer === 'string' ?
-            subscription.customer
-          : subscription.customer?.id ?? null
-
-        let query = admin
-          .from('profiles')
-          .update({
-            plan_tier: 'free',
-            subscription_status: 'canceled',
-          })
-
-        if (subscriptionId) {
-          query = query.eq('stripe_subscription_id', subscriptionId)
-        } else if (customerId) {
-          query = query.eq('stripe_customer_id', customerId)
-        } else {
-          console.error('subscription.deleted: no ids to match')
-          break
+        const response = await syncSubscriptionStatus(admin, subscription, event.type)
+        if (response) {
+          return response
         }
+        break
+      }
 
-        const { error } = await query
-        if (error) {
-          console.error('Failed to cancel subscription', error.message)
-          return new Response('Database update failed', { status: 500 })
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription
+        const response = await syncSubscriptionStatus(admin, subscription, event.type)
+        if (response) {
+          return response
         }
         break
       }
