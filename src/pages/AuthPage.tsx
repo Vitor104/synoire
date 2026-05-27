@@ -13,9 +13,9 @@ import {
 import {
   clearOAuthCallbackFromUrl,
   getOAuthCallbackError,
-  OAUTH_PENDING_STORAGE_KEY,
-  OAUTH_SESSION_FAILED_MESSAGE,
 } from '@/lib/auth/oauthCallback'
+import { isPrivateLanHostname } from '@/lib/auth/isPrivateLanHostname'
+import { consumeOAuthReturnFlash } from '@/lib/auth/oauthReturnFlash'
 import { resolvePostAuthRedirect } from '@/lib/auth/resolvePostAuthRedirect'
 import { consumeBillingReturnFlash } from '@/lib/billing/billingReturnFlash'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
@@ -74,20 +74,13 @@ export function AuthPage() {
   }, [])
 
   useEffect(() => {
-    if (authLoading || isAuthenticated) return
+    const oauthMessage = consumeOAuthReturnFlash()
+    if (!oauthMessage) return
+    setError(oauthMessage)
+  }, [])
 
-    const hadOAuthPending =
-      typeof sessionStorage !== 'undefined' &&
-      sessionStorage.getItem(OAUTH_PENDING_STORAGE_KEY) === '1'
-    if (!hadOAuthPending) return
-
-    sessionStorage.removeItem(OAUTH_PENDING_STORAGE_KEY)
-    const fromPainel =
-      (location.state as { from?: string } | null)?.from === '/painel'
-    if (fromPainel) {
-      setError(OAUTH_SESSION_FAILED_MESSAGE)
-    }
-  }, [authLoading, isAuthenticated, location.state])
+  const showLanOAuthHint =
+    import.meta.env.DEV && isPrivateLanHostname(window.location.hostname)
 
   const goToPainel = () => {
     navigate(postAuthPath)
@@ -329,6 +322,13 @@ export function AuthPage() {
         >
           Continuar com Google
         </button>
+        {showLanOAuthHint && (
+          <p className="mt-3 text-xs leading-relaxed text-secondary">
+            Dev na rede local: cadastre{' '}
+            <code className="text-primary">{window.location.origin}/**</code> em Supabase →
+            Authentication → Redirect URLs (e evite Site URL em localhost no celular).
+          </p>
+        )}
       </motion.div>
 
       <motion.p variants={item} className="mt-6 text-center text-xs text-secondary">

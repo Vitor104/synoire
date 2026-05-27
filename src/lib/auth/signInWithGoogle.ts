@@ -12,7 +12,7 @@ export async function signInWithGoogle(): Promise<SignInWithGoogleResult> {
     return { ok: false, message: 'Supabase não configurado.' }
   }
 
-  const redirectTo = `${window.location.origin}/painel`
+  const redirectTo = `${window.location.origin}/auth/callback`
 
   if (typeof sessionStorage !== 'undefined') {
     sessionStorage.setItem(OAUTH_PENDING_STORAGE_KEY, '1')

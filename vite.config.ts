@@ -11,6 +11,7 @@ const rootDir = fileURLToPath(new URL('.', import.meta.url))
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    host: true,
     watch: {
       ignored: ['**/node_modules/**', '**/dist/**'],
     },

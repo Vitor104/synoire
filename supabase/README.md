@@ -21,7 +21,20 @@ Para outro limite no cliente, defina `VITE_SESSION_IDLE_MINUTES` no `.env`.
    - **Site URL**: `http://localhost:5173` (dev) e/ou a URL de produção (ex.: `https://seu-app.netlify.app`).
    - **Redirect URLs**: `http://localhost:5173/**` e `https://seu-app.netlify.app/**` (ajuste o domínio de produção).
 
-O front-end chama `signInWithOAuth({ provider: 'google', options: { redirectTo: '{origin}/painel' } })`. Após o consentimento no Google, o usuário volta em `/painel`; o cliente Supabase (`detectSessionInUrl: true`) restaura a sessão automaticamente. Novos usuários recebem `profiles` e `user_stats` via trigger `handle_new_user`.
+O front-end chama `signInWithOAuth({ provider: 'google', options: { redirectTo: '{origin}/auth/callback' } })`. Após o consentimento no Google, o usuário volta em `/auth/callback` (rota pública); o cliente Supabase (`detectSessionInUrl: true`) troca o código PKCE e redireciona para `/painel`. Novos usuários recebem `profiles` e `user_stats` via trigger `handle_new_user`.
+
+### Testar OAuth no celular (dev LAN)
+
+1. Rode `npm run dev` (Vite com `host: true` escuta na rede local).
+2. No celular (mesma Wi‑Fi), abra o app pelo IP da máquina: `http://192.168.x.x:5173` — **não** use `localhost` no navegador do celular.
+3. No Supabase → **Authentication → URL Configuration** → **Redirect URLs**, adicione **exatamente** `http://192.168.x.x:5173/**` (o IP muda; não há wildcard de sub-rede).
+4. Opcional em dev: defina **Site URL** temporariamente para `http://192.168.x.x:5173` enquanto testa no celular (evita fallback para `localhost` se o `redirectTo` não estiver na allowlist).
+5. Mantenha `http://localhost:5173/**` para dev no desktop.
+6. Em produção: **Site URL** e **Redirect URLs** com o domínio Netlify real (ex.: `https://seu-app.netlify.app/**`).
+
+**Diagnóstico:** se o navegador mostrar "conexão recusada" após o Google, confira a barra de endereço. Se aparecer `localhost` ou `127.0.0.1`, o Supabase redirecionou para o Site URL de dev — cadastre o origin que você usa no celular em **Redirect URLs** (e, se necessário, ajuste o Site URL).
+
+Alternativa se o IP mudar com frequência: túnel (`ngrok`, Cloudflare Tunnel) com a URL do túnel na allowlist.
 
 ## Migrações
 

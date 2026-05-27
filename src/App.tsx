@@ -11,6 +11,7 @@ import { JoinedHubsProvider } from '@/contexts/JoinedHubsContext'
 import { RoomInvitesProvider } from '@/contexts/RoomInvitesContext'
 import { StudyPartnersProvider } from '@/contexts/StudyPartnersContext'
 import { UserPlanProvider } from '@/contexts/UserPlanContext'
+import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
 import { AuthPage } from '@/pages/AuthPage'
 import { BillingReturnPage } from '@/pages/BillingReturnPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -27,6 +28,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/entrar" element={<AuthPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/billing/retorno" element={<BillingReturnPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />

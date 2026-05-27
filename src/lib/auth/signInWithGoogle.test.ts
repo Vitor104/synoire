@@ -18,13 +18,13 @@ describe('signInWithGoogle', () => {
     vi.stubGlobal('location', { origin: 'http://localhost:5173' })
   })
 
-  it('calls signInWithOAuth with google and redirectTo /painel', async () => {
+  it('calls signInWithOAuth with google and redirectTo /auth/callback', async () => {
     signInWithOAuthMock.mockResolvedValue({ error: null })
     const result = await signInWithGoogle()
     expect(result).toEqual({ ok: true })
     expect(signInWithOAuthMock).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: 'http://localhost:5173/painel' },
+      options: { redirectTo: 'http://localhost:5173/auth/callback' },
     })
     expect(sessionStorage.getItem(OAUTH_PENDING_STORAGE_KEY)).toBe('1')
   })
