@@ -74,7 +74,8 @@ describe('nextAdvancedTimerState', () => {
   }
 
   it('persists long_break after 4th focus', () => {
-    const next = nextAdvancedTimerState(baseRoom)
+    const now = new Date('2026-05-16T12:26:00.000Z')
+    const next = nextAdvancedTimerState(baseRoom, now)
     expect(next?.status).toBe('long_break')
     expect(next?.cycle_count).toBe(4)
     expect(next?.focus_cycle).toBe('25/5')

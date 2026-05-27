@@ -14,6 +14,7 @@ export function mapAccessRow(row: RoomAccessRow): RoomAccessGrant {
     roomId: row.room_id,
     userId: row.user_id,
     grantedAt: row.created_at,
+    acceptedAt: row.accepted_at ?? null,
     username: profile?.username,
     avatarUrl: profile?.avatar_url ?? null,
   }

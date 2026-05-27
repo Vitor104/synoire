@@ -127,3 +127,11 @@ export function resolveTimerCatchUp(
     changed: !timerStatesEqual(state, resolved),
   }
 }
+
+/** Wall-clock payload after idle prep + completed segments (for display and persist). */
+export function resolveTimerForPersist(
+  state: RoomTimerPayload,
+  now: Date | number = Date.now(),
+): RoomTimerPayload {
+  return resolveTimerCatchUp(state, now).resolved
+}

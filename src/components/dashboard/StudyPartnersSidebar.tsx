@@ -339,8 +339,10 @@ export function StudyPartnersSidebar({
 
   const handleAcceptRoomInvite = useCallback(
     (invite: IncomingRoomInvite) => {
-      acceptRoomInvite(invite)
-      void handleJoinRoom(invite.roomId, invite.inviterUsername)
+      void (async () => {
+        await acceptRoomInvite(invite)
+        void handleJoinRoom(invite.roomId, invite.inviterUsername)
+      })()
     },
     [acceptRoomInvite, handleJoinRoom],
   )

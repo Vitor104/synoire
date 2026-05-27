@@ -5,6 +5,8 @@ import { LockIcon } from '@/components/premium/LockIcon'
 import { formatRoomCardTimeLabel } from '@/lib/hubRooms'
 import type { StudyRoom } from '@/lib/hubRooms'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
+import { useServerClockOffset } from '@/hooks/useServerClockOffset'
+import { isSupabaseConfigured } from '@/lib/supabase'
 
 type HubRoomCardProps = {
   room: StudyRoom
@@ -12,14 +14,18 @@ type HubRoomCardProps = {
 
 export function HubRoomCard({ room }: HubRoomCardProps) {
   const reduced = usePrefersReducedMotion()
-  const [now, setNow] = useState(() => Date.now())
+  const serverOffsetMs = useServerClockOffset(isSupabaseConfigured)
+  const [localNow, setLocalNow] = useState(() => Date.now())
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000)
+    const id = window.setInterval(() => setLocalNow(Date.now()), 1000)
     return () => window.clearInterval(id)
   }, [])
 
-  const timeLabel = formatRoomCardTimeLabel(room.current_timer_state, now)
+  const timeLabel = formatRoomCardTimeLabel(
+    room.current_timer_state,
+    localNow + serverOffsetMs,
+  )
 
   return (
     <motion.article

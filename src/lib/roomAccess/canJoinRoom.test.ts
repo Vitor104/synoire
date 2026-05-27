@@ -117,15 +117,43 @@ describe('canJoinRoom', () => {
     expect(result.status).toBe('allowed')
   })
 
-  it('allows private room with grant', async () => {
+  it('allows private room with active grant', async () => {
     getRoomByIdMock.mockResolvedValue({
       ok: true,
       data: { ...baseRoom, is_private: true },
     })
-    grantMaybeSingleMock.mockResolvedValue({ data: { room_id: 'room-1' }, error: null })
+    grantMaybeSingleMock.mockResolvedValue({
+      data: {
+        room_id: 'room-1',
+        created_at: new Date().toISOString(),
+        accepted_at: null,
+      },
+      error: null,
+    })
 
     const result = await canJoinRoom('room-1', 'user-2')
     expect(result.status).toBe('allowed')
+  })
+
+  it('denies private room with expired grant', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-05-27T12:00:00.000Z'))
+    getRoomByIdMock.mockResolvedValue({
+      ok: true,
+      data: { ...baseRoom, is_private: true },
+    })
+    grantMaybeSingleMock.mockResolvedValue({
+      data: {
+        room_id: 'room-1',
+        created_at: '2026-05-25T12:00:00.000Z',
+        accepted_at: null,
+      },
+      error: null,
+    })
+
+    const result = await canJoinRoom('room-1', 'user-2')
+    expect(result.status).toBe('denied_private')
+    vi.useRealTimers()
   })
 
   it('returns not_found when room missing and no grant', async () => {
@@ -152,7 +180,14 @@ describe('canJoinRoom', () => {
       message: 'permission denied',
       code: 'forbidden',
     })
-    grantMaybeSingleMock.mockResolvedValue({ data: { room_id: 'room-1' }, error: null })
+    grantMaybeSingleMock.mockResolvedValue({
+      data: {
+        room_id: 'room-1',
+        created_at: new Date().toISOString(),
+        accepted_at: null,
+      },
+      error: null,
+    })
 
     const result = await canJoinRoom('room-1', 'user-2')
     expect(result.status).toBe('allowed')

@@ -3,7 +3,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { PartnerAvatar } from '@/components/dashboard/PartnerAvatar'
 import { LockIcon } from '@/components/premium/LockIcon'
 import { AppToast } from '@/components/ui/AppToast'
+import { getHubInviterButtonState } from '@/lib/accessInvites/constants'
 import { getOrCreateHubInviteToken, grantHubAccess, listHubAccess } from '@/lib/hubAccess'
+import type { HubAccessGrant } from '@/lib/hubAccess/types'
 import { copyHubInviteUrl } from '@/lib/hubs/hubInviteUrl'
 import type { StudyPartnerView } from '@/lib/studyPartners'
 import {
@@ -28,7 +30,9 @@ export function InviteToHubModal({
   partners,
   prefersReducedMotion,
 }: InviteToHubModalProps) {
-  const [grantedIds, setGrantedIds] = useState<Set<string>>(() => new Set())
+  const [grantsByPartnerId, setGrantsByPartnerId] = useState<
+    Map<string, Pick<HubAccessGrant, 'grantedAt'>>
+  >(() => new Map())
   const [toast, setToast] = useState({ message: '', visible: false })
   const [loadingGrants, setLoadingGrants] = useState(false)
 
@@ -42,7 +46,11 @@ export function InviteToHubModal({
     void listHubAccess(hubId).then((result) => {
       if (cancelled) return
       if (result.ok) {
-        setGrantedIds(new Set(result.data.map((g) => g.userId)))
+        const next = new Map<string, Pick<HubAccessGrant, 'grantedAt'>>()
+        for (const g of result.data) {
+          next.set(g.userId, { grantedAt: g.grantedAt })
+        }
+        setGrantsByPartnerId(next)
       }
       setLoadingGrants(false)
     })
@@ -53,7 +61,7 @@ export function InviteToHubModal({
 
   useEffect(() => {
     if (!open) {
-      setGrantedIds(new Set())
+      setGrantsByPartnerId(new Map())
       setLoadingGrants(false)
       setToast({ message: '', visible: false })
     }
@@ -70,7 +78,11 @@ export function InviteToHubModal({
         setToast({ message: result.message, visible: true })
         return
       }
-      setGrantedIds((prev) => new Set(prev).add(partnerId))
+      setGrantsByPartnerId((prev) => {
+        const next = new Map(prev)
+        next.set(partnerId, { grantedAt: result.data.grantedAt })
+        return next
+      })
       if (!result.alreadyGranted) {
         setToast({
           message: `Acesso ao Hub liberado para @${username}!`,
@@ -156,7 +168,8 @@ export function InviteToHubModal({
                   </li>
                 ) : (
                   partners.map((partner) => {
-                    const invited = grantedIds.has(partner.id)
+                    const grant = grantsByPartnerId.get(partner.id)
+                    const { disabled, label } = getHubInviterButtonState(grant)
                     return (
                       <li
                         key={partner.id}
@@ -174,11 +187,11 @@ export function InviteToHubModal({
                         </motion.div>
                         <button
                           type="button"
-                          disabled={invited}
+                          disabled={disabled}
                           onClick={() => void handleGrant(partner.id, partner.username)}
                           className="shrink-0 rounded-lg border border-firefly/30 bg-firefly/10 px-2.5 py-1.5 text-[11px] font-medium text-firefly transition hover:brightness-110 disabled:cursor-default disabled:border-white/10 disabled:bg-white/5 disabled:text-secondary"
                         >
-                          {invited ? 'Convidado' : 'Convidar para o Hub'}
+                          {label}
                         </button>
                       </li>
                     )

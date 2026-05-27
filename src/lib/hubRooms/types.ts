@@ -58,13 +58,13 @@ export type HubRoomsAdapter = {
   listRooms(hubSlug: string): Promise<StudyRoom[]>
   getRoom(roomId: string): Promise<StudyRoom | null>
   createRoom(input: CreateRoomInput): Promise<StudyRoom>
-  startFocusTimer(roomId: string): Promise<StudyRoom | null>
-  advanceTimerPhase(roomId: string): Promise<StudyRoom | null>
+  startFocusTimer(roomId: string, now?: Date | number): Promise<StudyRoom | null>
+  advanceTimerPhase(roomId: string, now?: Date | number): Promise<StudyRoom | null>
   /** Persists timer state after wall-clock catch-up (empty rooms, late joiners). */
-  syncTimerCatchUp(roomId: string): Promise<StudyRoom | null>
+  syncTimerCatchUp(roomId: string, now?: Date | number): Promise<StudyRoom | null>
   incrementPresence(roomId: string): Promise<void>
   decrementPresence(roomId: string): Promise<void>
-  subscribe(onChange: () => void, hubSlug?: string): () => void
+  subscribe(onChange: () => void, hubSlug?: string, roomId?: string): () => void
 }
 
 export const THEME_MAX_LENGTH = 25

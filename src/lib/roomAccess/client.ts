@@ -1,14 +1,19 @@
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { isDemoMode } from '@/lib/hubRooms/demo'
+import { isAccessGrantActive } from '@/lib/accessInvites/constants'
 import {
+  acceptRoomAccessGrant as acceptLocal,
   grantRoomAccess as grantLocal,
   hasRoomAccess as hasLocal,
   listGrantsForRoom as listLocal,
+  listGrantsForUser,
   revokeRoomAccessGrant as revokeLocal,
 } from './storage'
 import { listIncomingRoomInvites } from './listIncomingRoomInvites'
 import {
+  acceptRoomAccessSupabase,
   grantRoomAccessSupabase,
+  isActiveRoomAccessGrant,
   listRoomAccessSupabase,
   revokeRoomAccessSupabase,
 } from './supabaseRoomAccess'
@@ -34,6 +39,25 @@ export async function grantRoomAccess(
   }
   const grant = grantLocal(roomId, userId)
   return { ok: true, data: grant }
+}
+
+export async function acceptRoomAccess(
+  roomId: string,
+  userId: string,
+): Promise<RoomAccessResult<RoomAccessGrant>> {
+  if (useSupabase()) {
+    return acceptRoomAccessSupabase(roomId)
+  }
+  const grant = listGrantsForUser(userId).find((g) => g.roomId === roomId)
+  if (!grant || !isAccessGrantActive(grant.grantedAt, grant.acceptedAt)) {
+    return { ok: false, message: 'Convite não encontrado ou já expirado.' }
+  }
+  const acceptedAt = new Date().toISOString()
+  acceptLocal(roomId, userId)
+  return {
+    ok: true,
+    data: { ...grant, acceptedAt },
+  }
 }
 
 export async function listRoomAccess(
@@ -66,7 +90,7 @@ export async function hasRoomAccess(roomId: string, userId: string): Promise<boo
   if (useSupabase()) {
     const result = await listRoomAccessSupabase(roomId)
     if (!result.ok) return false
-    return result.data.some((g) => g.userId === userId)
+    return result.data.some((g) => g.userId === userId && isActiveRoomAccessGrant(g))
   }
   return hasLocal(roomId, userId)
 }

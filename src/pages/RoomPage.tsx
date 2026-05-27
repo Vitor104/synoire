@@ -104,7 +104,6 @@ export function RoomPage() {
     phase,
     remainingSeconds,
     isIdle,
-    startFocusTimer,
     isSegmentComplete,
     startedAt,
     cycle,
@@ -302,13 +301,6 @@ export function RoomPage() {
     },
     [isIdle, phase],
   )
-
-  /** Start focus only for participants already in the active session (not lounge/onboarding). */
-  useEffect(() => {
-    if (sessionMode !== 'active') return
-    if (!isIdle || remainingSeconds > 0) return
-    void startFocusTimer()
-  }, [sessionMode, isIdle, remainingSeconds, startFocusTimer])
 
   useEffect(() => {
     if (sessionMode !== 'lounge') return

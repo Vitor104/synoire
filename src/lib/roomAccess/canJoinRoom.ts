@@ -2,6 +2,7 @@ import { isDemoMode } from '@/lib/hubRooms/demo'
 import { getRoomById } from '@/lib/hubRooms/getRoomById'
 import { mockHubRoomsAdapter } from '@/lib/hubRooms/mockHubRoomsAdapter'
 import type { StudyRoom } from '@/lib/hubRooms/types'
+import { isAccessGrantActive } from '@/lib/accessInvites/constants'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { hasRoomAccess as hasLocalAccess } from './storage'
 
@@ -41,7 +42,7 @@ async function userHasRoomAccessGrant(
 
   const { data, error } = await supabase
     .from('room_access')
-    .select('room_id')
+    .select('room_id, created_at, accepted_at')
     .eq('room_id', roomId)
     .eq('user_id', userId)
     .maybeSingle()
@@ -51,7 +52,8 @@ async function userHasRoomAccessGrant(
     return false
   }
 
-  return Boolean(data)
+  if (!data?.created_at) return false
+  return isAccessGrantActive(data.created_at, data.accepted_at)
 }
 
 function userIsRoomCreator(room: StudyRoom, userId: string): boolean {

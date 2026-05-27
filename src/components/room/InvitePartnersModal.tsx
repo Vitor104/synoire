@@ -5,6 +5,8 @@ import { LockIcon } from '@/components/premium/LockIcon'
 import { AppToast } from '@/components/ui/AppToast'
 import { copyRoomInviteUrl } from '@/lib/hubRooms/roomInviteUrl'
 import type { StudyPartnerView } from '@/lib/studyPartners'
+import { getRoomInviterButtonState } from '@/lib/accessInvites/constants'
+import type { RoomAccessGrant } from '@/lib/roomAccess'
 import { getOrCreateRoomInviteToken, grantRoomAccess, listRoomAccess } from '@/lib/roomAccess'
 import {
   pageStaggerContainer,
@@ -47,7 +49,9 @@ export function InvitePartnersModal({
   prefersReducedMotion,
 }: InvitePartnersModalProps) {
   const isPrivate = variant === 'private'
-  const [grantedIds, setGrantedIds] = useState<Set<string>>(() => new Set())
+  const [grantsByPartnerId, setGrantsByPartnerId] = useState<
+    Map<string, Pick<RoomAccessGrant, 'grantedAt' | 'acceptedAt'>>
+  >(() => new Map())
   const [toast, setToast] = useState({ message: '', visible: false })
   const [loadingGrants, setLoadingGrants] = useState(false)
 
@@ -62,7 +66,11 @@ export function InvitePartnersModal({
     void listRoomAccess(roomId).then((result) => {
       if (cancelled) return
       if (result.ok) {
-        setGrantedIds(new Set(result.data.map((g) => g.userId)))
+        const next = new Map<string, Pick<RoomAccessGrant, 'grantedAt' | 'acceptedAt'>>()
+        for (const g of result.data) {
+          next.set(g.userId, { grantedAt: g.grantedAt, acceptedAt: g.acceptedAt })
+        }
+        setGrantsByPartnerId(next)
       }
       setLoadingGrants(false)
     })
@@ -73,7 +81,7 @@ export function InvitePartnersModal({
 
   useEffect(() => {
     if (!open) {
-      setGrantedIds(new Set())
+      setGrantsByPartnerId(new Map())
       setLoadingGrants(false)
       setToast({ message: '', visible: false })
     }
@@ -90,7 +98,14 @@ export function InvitePartnersModal({
         setToast({ message: result.message, visible: true })
         return
       }
-      setGrantedIds((prev) => new Set(prev).add(partnerId))
+      setGrantsByPartnerId((prev) => {
+        const next = new Map(prev)
+        next.set(partnerId, {
+          grantedAt: result.data.grantedAt,
+          acceptedAt: result.data.acceptedAt,
+        })
+        return next
+      })
       if (!result.alreadyGranted) {
         setToast({
           message: `Acesso liberado para @${username}!`,
@@ -186,7 +201,8 @@ export function InvitePartnersModal({
                       </li>
                     ) : (
                       partners.map((partner) => {
-                        const sent = grantedIds.has(partner.id)
+                        const grant = grantsByPartnerId.get(partner.id)
+                        const { disabled, label } = getRoomInviterButtonState(grant)
                         return (
                           <li
                             key={partner.id}
@@ -204,11 +220,11 @@ export function InvitePartnersModal({
                             </motion.div>
                             <button
                               type="button"
-                              disabled={sent}
+                              disabled={disabled}
                               onClick={() => void handleGrant(partner.id, partner.username)}
                               className="shrink-0 rounded-lg border border-firefly/30 bg-firefly/10 px-2.5 py-1.5 text-[11px] font-medium text-firefly transition hover:brightness-110 disabled:cursor-default disabled:border-white/10 disabled:bg-white/5 disabled:text-secondary"
                             >
-                              {sent ? 'Enviado' : 'Enviar Convite'}
+                              {label}
                             </button>
                           </li>
                         )

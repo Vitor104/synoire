@@ -1,3 +1,4 @@
+import { isAccessGrantActive, isAccessInvitePending } from '@/lib/accessInvites/constants'
 import { ROOM_ACCESS_STORAGE_KEY, type RoomAccessGrant } from './types'
 
 export const ROOM_ACCESS_CHANGED_EVENT = 'synoire:room-access-changed'
@@ -46,20 +47,40 @@ function isValidGrant(item: unknown): item is RoomAccessGrant {
 export function grantRoomAccess(roomId: string, userId: string): RoomAccessGrant {
   const grants = readGrants()
   const existing = grants.find((g) => g.roomId === roomId && g.userId === userId)
-  if (existing) return existing
+  if (existing) {
+    if (existing.acceptedAt || isAccessInvitePending(existing.grantedAt, existing.acceptedAt)) {
+      return existing
+    }
+    const next = grants.filter((g) => !(g.roomId === roomId && g.userId === userId))
+    writeGrants(next)
+  }
 
   const grant: RoomAccessGrant = {
     roomId,
     userId,
     grantedAt: new Date().toISOString(),
+    acceptedAt: null,
   }
-  writeGrants([...grants, grant])
+  writeGrants([...readGrants(), grant])
   notifyRoomAccessChanged({ type: 'INSERT', grant })
   return grant
 }
 
+export function acceptRoomAccessGrant(roomId: string, userId: string): boolean {
+  const grants = readGrants()
+  const index = grants.findIndex((g) => g.roomId === roomId && g.userId === userId)
+  if (index < 0) return false
+  const acceptedAt = new Date().toISOString()
+  const next = [...grants]
+  next[index] = { ...next[index], acceptedAt }
+  writeGrants(next)
+  return true
+}
+
 export function hasRoomAccess(roomId: string, userId: string): boolean {
-  return readGrants().some((g) => g.roomId === roomId && g.userId === userId)
+  const grant = readGrants().find((g) => g.roomId === roomId && g.userId === userId)
+  if (!grant) return false
+  return isAccessGrantActive(grant.grantedAt, grant.acceptedAt)
 }
 
 export function listGrantsForRoom(roomId: string): RoomAccessGrant[] {

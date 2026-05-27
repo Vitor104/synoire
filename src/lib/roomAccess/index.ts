@@ -5,6 +5,7 @@ export {
   type InviteTokenResult,
 } from './roomInviteTokens'
 export {
+  acceptRoomAccess,
   fetchIncomingRoomInvites,
   grantRoomAccess,
   hasRoomAccess,

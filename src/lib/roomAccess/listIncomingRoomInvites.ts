@@ -1,3 +1,4 @@
+import { isAccessGrantActive } from '@/lib/accessInvites/constants'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { isDemoMode } from '@/lib/hubRooms/demo'
 import { isForbiddenError, mapRoomQueryError } from '@/lib/hubRooms/errors'
@@ -8,6 +9,7 @@ import type { IncomingRoomInvite, RoomAccessResult } from './types'
 type RoomAccessIncomingRow = {
   room_id: string
   created_at: string
+  accepted_at?: string | null
   rooms: {
     id: string
     name: string
@@ -58,6 +60,8 @@ function mapRowsToInvites(
   for (const row of rows) {
     const room = resolveRoom(row.rooms)
     if (!room?.is_private) continue
+    if (row.accepted_at) continue
+    if (!isAccessGrantActive(row.created_at, row.accepted_at)) continue
     if (isRoomInviteAcknowledged(row.room_id, row.created_at)) continue
     invites.push({
       roomId: row.room_id,
@@ -84,7 +88,7 @@ export async function listIncomingRoomInvitesSupabase(
 
   const { data, error } = await supabase
     .from('room_access')
-    .select('room_id, created_at, rooms(id, name, is_private, creator_id)')
+    .select('room_id, created_at, accepted_at, rooms(id, name, is_private, creator_id)')
     .eq('user_id', userId)
 
   if (error) {
@@ -109,7 +113,12 @@ export async function listIncomingRoomInvitesSupabase(
 
 function listIncomingRoomInvitesLocal(userId: string): IncomingRoomInvite[] {
   return listGrantsForUser(userId)
-    .filter((g) => !isRoomInviteAcknowledged(g.roomId, g.grantedAt))
+    .filter(
+      (g) =>
+        !g.acceptedAt &&
+        isAccessGrantActive(g.grantedAt, g.acceptedAt) &&
+        !isRoomInviteAcknowledged(g.roomId, g.grantedAt),
+    )
     .map((g) => ({
       roomId: g.roomId,
       roomName: g.roomName ?? 'Sala privada',

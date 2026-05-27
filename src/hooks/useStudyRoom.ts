@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getHubRoomsAdapter, type StudyRoom } from '@/lib/hubRooms'
 import { filterVisibleRooms } from '@/lib/hubRooms/utils'
+import { getEffectiveNowMs, refreshServerClockOffset } from '@/lib/time/serverClock'
 import { useRoomPresence } from '@/hooks/useRoomPresence'
 
 export function useStudyRoom(roomId: string | undefined) {
@@ -10,6 +11,7 @@ export function useStudyRoom(roomId: string | undefined) {
   const [completedTick, setCompletedTick] = useState(-1)
   const [loadedRoomId, setLoadedRoomId] = useState<string | undefined>(undefined)
   const { presentCount, emptySince } = useRoomPresence(roomId)
+  const prevRoomIdRef = useRef<string | undefined>(undefined)
 
   const refreshRoom = useCallback(() => {
     setRefreshTick((tick) => tick + 1)
@@ -21,21 +23,28 @@ export function useStudyRoom(roomId: string | undefined) {
       setLoading(false)
       setCompletedTick(refreshTick)
       setLoadedRoomId(undefined)
+      prevRoomIdRef.current = undefined
       return
     }
 
-    setRoom(null)
-    setLoading(true)
+    const roomChanged = prevRoomIdRef.current !== roomId
+    prevRoomIdRef.current = roomId
+
+    if (roomChanged) {
+      setRoom(null)
+      setLoading(true)
+    }
 
     const adapter = getHubRoomsAdapter()
     let cancelled = false
 
     const load = async () => {
       try {
+        await refreshServerClockOffset()
         const r = await adapter.getRoom(roomId)
         if (!cancelled) setRoom(r)
         if (r && !cancelled) {
-          const synced = await adapter.syncTimerCatchUp(roomId)
+          const synced = await adapter.syncTimerCatchUp(roomId, getEffectiveNowMs())
           if (!cancelled && synced) setRoom(synced)
         }
       } catch {
@@ -52,7 +61,7 @@ export function useStudyRoom(roomId: string | undefined) {
     void load()
     const unsub = adapter.subscribe(() => {
       void load()
-    })
+    }, undefined, roomId)
 
     return () => {
       cancelled = true

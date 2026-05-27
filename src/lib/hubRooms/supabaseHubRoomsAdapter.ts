@@ -9,7 +9,6 @@ import { patchRoomTimer } from './patchRoomTimer'
 import {
   catchUpTimerState,
   nextAdvancedTimerState,
-  nextFocusTimerState,
 } from './timerMutations'
 import type { HubRoomsAdapter } from './types'
 import { filterVisibleRooms } from './utils'
@@ -49,35 +48,26 @@ export const supabaseHubRoomsAdapter: HubRoomsAdapter = {
     return throwOnError(result)
   },
 
-  async syncTimerCatchUp(roomId) {
+  async syncTimerCatchUp(roomId, now) {
     const current = await this.getRoom(roomId)
     if (!current) return null
-    const next = catchUpTimerState(current)
+    const next = catchUpTimerState(current, now)
     if (!next) return current
     const result = await patchRoomTimer(roomId, next, current.hub_slug)
     return throwOnError(result)
   },
 
-  async startFocusTimer(roomId) {
-    const current = await this.getRoom(roomId)
-    if (!current) return null
-    if (catchUpTimerState(current)) {
-      const synced = await this.syncTimerCatchUp(roomId)
-      if (synced?.current_timer_state.status === 'focus') return synced
-    }
-    const next = nextFocusTimerState(current)
-    if (!next) return current
-    const result = await patchRoomTimer(roomId, next, current.hub_slug)
-    return throwOnError(result)
+  async startFocusTimer(roomId, now) {
+    return this.syncTimerCatchUp(roomId, now)
   },
 
-  async advanceTimerPhase(roomId) {
+  async advanceTimerPhase(roomId, now) {
     const current = await this.getRoom(roomId)
     if (!current) return null
-    if (catchUpTimerState(current)) {
-      return this.syncTimerCatchUp(roomId)
+    if (catchUpTimerState(current, now)) {
+      return this.syncTimerCatchUp(roomId, now)
     }
-    const next = nextAdvancedTimerState(current)
+    const next = nextAdvancedTimerState(current, now)
     if (!next) return current
     const result = await patchRoomTimer(roomId, next, current.hub_slug)
     return throwOnError(result)
@@ -91,7 +81,7 @@ export const supabaseHubRoomsAdapter: HubRoomsAdapter = {
     // Presence is handled via Realtime Presence hooks.
   },
 
-  subscribe(onChange, hubSlug) {
+  subscribe(onChange, hubSlug, roomId) {
     if (!isSupabaseConfigured) return () => {}
     const supabase = getSupabase()
     if (!supabase) return () => {}
@@ -103,7 +93,11 @@ export const supabaseHubRoomsAdapter: HubRoomsAdapter = {
       const hubId = hubSlug ? await resolveHubId(hubSlug) : null
       if (cancelled) return
 
-      const channelName = hubId ? `hub_rooms:${hubId}` : 'hub_rooms:all'
+      const channelName = roomId
+        ? `room_timer:${roomId}`
+        : hubId
+          ? `hub_rooms:${hubId}`
+          : 'hub_rooms:all'
       const changeConfig: {
         event: '*'
         schema: 'public'
@@ -114,7 +108,9 @@ export const supabaseHubRoomsAdapter: HubRoomsAdapter = {
         schema: 'public',
         table: 'rooms',
       }
-      if (hubId) {
+      if (roomId) {
+        changeConfig.filter = `id=eq.${roomId}`
+      } else if (hubId) {
         changeConfig.filter = `hub_id=eq.${hubId}`
       }
 

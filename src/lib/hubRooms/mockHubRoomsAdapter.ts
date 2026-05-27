@@ -1,5 +1,5 @@
-import { persistedToPayload, toPersistedTimer } from './mapRoomRow'
-import { advanceTimerOnSegmentComplete, catchUpTimerState } from './timerMutations'
+import { persistedToPayload } from './mapRoomRow'
+import { catchUpTimerState, nextAdvancedTimerState } from './timerMutations'
 import type { CreateRoomInput, HubRoomsAdapter, StudyRoom } from './types'
 import { buildCreatePayload, filterVisibleRooms, validateTheme } from './utils'
 
@@ -115,9 +115,9 @@ export const mockHubRoomsAdapter: HubRoomsAdapter = {
     return createStudyRoom(input)
   },
 
-  async syncTimerCatchUp(roomId) {
+  async syncTimerCatchUp(roomId, now) {
     return mutateRoom(roomId, (room) => {
-      const next = catchUpTimerState(room)
+      const next = catchUpTimerState(room, now)
       if (!next) return room
       return {
         ...room,
@@ -126,49 +126,22 @@ export const mockHubRoomsAdapter: HubRoomsAdapter = {
     })
   },
 
-  async startFocusTimer(roomId) {
+  async startFocusTimer(roomId, now) {
+    return this.syncTimerCatchUp(roomId, now)
+  },
+
+  async advanceTimerPhase(roomId, now) {
     const current = await this.getRoom(roomId)
     if (!current) return null
-    if (catchUpTimerState(current)) {
-      const synced = await this.syncTimerCatchUp(roomId)
-      if (synced?.current_timer_state.status === 'focus') return synced
+    if (catchUpTimerState(current, now)) {
+      return this.syncTimerCatchUp(roomId, now)
     }
     return mutateRoom(roomId, (room) => {
-      if (room.current_timer_state.status !== 'idle') return room
-      const now = new Date().toISOString()
-      const next = toPersistedTimer(
-        {
-          ...room.current_timer_state,
-          status: 'focus',
-          started_at: now,
-        },
-        room.focus_cycle,
-      )
+      const next = nextAdvancedTimerState(room, now)
+      if (!next) return room
       return {
         ...room,
         current_timer_state: persistedToPayload(next),
-      }
-    })
-  },
-
-  async advanceTimerPhase(roomId) {
-    const current = await this.getRoom(roomId)
-    if (!current) return null
-    if (catchUpTimerState(current)) {
-      return this.syncTimerCatchUp(roomId)
-    }
-    return mutateRoom(roomId, (room) => {
-      const ts = room.current_timer_state
-      if (ts.status === 'idle' || !ts.started_at) return room
-      const advanced = advanceTimerOnSegmentComplete(ts)
-      if (!advanced) return room
-      const now = new Date().toISOString()
-      return {
-        ...room,
-        current_timer_state: {
-          ...advanced,
-          started_at: now,
-        },
       }
     })
   },

@@ -11,6 +11,7 @@ import { AppToast } from '@/components/ui/AppToast'
 import { useAuth } from '@/contexts/AuthContext'
 import { isDemoMode } from '@/lib/hubRooms/demo'
 import {
+  acceptRoomAccess,
   acknowledgeRoomInvite,
   fetchIncomingRoomInvites,
   inviteAckKey,
@@ -19,6 +20,7 @@ import {
   subscribeRoomAccessStorageSync,
   type IncomingRoomInvite,
 } from '@/lib/roomAccess'
+import { isAccessGrantActive } from '@/lib/accessInvites/constants'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { enrichRoomAccessInvite } from '@/lib/roomAccess/enrichRoomInvite'
 import { isRoomInviteAcknowledged } from '@/lib/roomAccess/inviteAcknowledgment'
@@ -26,7 +28,7 @@ import { isRoomInviteAcknowledged } from '@/lib/roomAccess/inviteAcknowledgment'
 type RoomInvitesContextValue = {
   incomingRoomInvites: IncomingRoomInvite[]
   isLoading: boolean
-  acceptRoomInvite: (invite: IncomingRoomInvite) => void
+  acceptRoomInvite: (invite: IncomingRoomInvite) => Promise<void>
   declineRoomInvite: (invite: IncomingRoomInvite) => Promise<boolean>
   refresh: () => Promise<void>
 }
@@ -85,6 +87,7 @@ export function RoomInvitesProvider({ children }: { children: ReactNode }) {
 
       void enrichRoomAccessInvite(event.row, userId).then((invite) => {
         if (!invite) return
+        if (!isAccessGrantActive(invite.grantedAt)) return
         if (isRoomInviteAcknowledged(invite.roomId, invite.grantedAt)) return
 
         setIncomingRoomInvites((prev) => upsertInvite(prev, invite))
@@ -104,12 +107,28 @@ export function RoomInvitesProvider({ children }: { children: ReactNode }) {
     })
   }, [user?.id, isSessionReady, refresh])
 
-  const acceptRoomInvite = useCallback((invite: IncomingRoomInvite) => {
-    acknowledgeRoomInvite(invite.roomId, invite.grantedAt)
-    setIncomingRoomInvites((prev) =>
-      prev.filter((i) => inviteAckKey(i.roomId, i.grantedAt) !== inviteAckKey(invite.roomId, invite.grantedAt)),
-    )
-  }, [])
+  const acceptRoomInvite = useCallback(
+    async (invite: IncomingRoomInvite) => {
+      const userId = user?.id
+      if (!userId) return
+
+      const result = await acceptRoomAccess(invite.roomId, userId)
+      if (!result.ok) {
+        setToast({ message: result.message, visible: true })
+        return
+      }
+
+      acknowledgeRoomInvite(invite.roomId, invite.grantedAt)
+      setIncomingRoomInvites((prev) =>
+        prev.filter(
+          (i) =>
+            inviteAckKey(i.roomId, i.grantedAt) !==
+            inviteAckKey(invite.roomId, invite.grantedAt),
+        ),
+      )
+    },
+    [user?.id],
+  )
 
   const declineRoomInvite = useCallback(
     async (invite: IncomingRoomInvite) => {

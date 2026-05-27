@@ -4,6 +4,7 @@ export type RoomAccessGrant = {
   roomId: string
   userId: string
   grantedAt: string
+  acceptedAt?: string | null
   username?: string
   avatarUrl?: string | null
   roomName?: string
@@ -23,6 +24,7 @@ export type RoomAccessRow = {
   room_id: string
   user_id: string
   created_at: string
+  accepted_at?: string | null
   profiles?: { username: string; avatar_url: string | null } | { username: string; avatar_url: string | null }[] | null
 }
 

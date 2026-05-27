@@ -18,6 +18,7 @@ import {
   type RoomPhase,
   type RoomTimerState,
 } from '@/lib/roomTimer'
+import { useServerClockOffset } from '@/hooks/useServerClockOffset'
 
 const LEADER_TTL_MS = 3000
 
@@ -94,6 +95,8 @@ export function useGlobalRoomTimer(
   const adapter = getHubRoomsAdapter()
 
   const useMock = shouldUseMockTimer(roomId, studyRoom)
+  const useServerClock = Boolean(studyRoom && roomId && !useMock)
+  const serverOffsetMs = useServerClockOffset(useServerClock)
 
   const [mockState, setMockState] = useState<RoomTimerState>(() =>
     getMockRoomTimerState(roomId),
@@ -104,12 +107,14 @@ export function useGlobalRoomTimer(
     setMockState(getMockRoomTimerState(roomId))
   }, [roomId, studyRoom, useMock])
 
-  const [now, setNow] = useState(() => Date.now())
+  const [localNow, setLocalNow] = useState(() => Date.now())
 
   useEffect(() => {
-    const tick = window.setInterval(() => setNow(Date.now()), 1000)
+    const tick = window.setInterval(() => setLocalNow(Date.now()), 1000)
     return () => window.clearInterval(tick)
   }, [])
+
+  const now = localNow + serverOffsetMs
 
   const storedPayload = studyRoom?.current_timer_state
   const catchUp = useMemo(() => {
@@ -155,23 +160,18 @@ export function useGlobalRoomTimer(
 
   const advancePhase = useCallback(async () => {
     if (studyRoom && roomId) {
-      await adapter.advanceTimerPhase(roomId)
+      await adapter.advanceTimerPhase(roomId, now)
       return
     }
     setMockState((prev) =>
-      buildAdvancedState(prev, new Date(), prev.cycle ?? DEFAULT_CYCLE_CONFIG),
+      buildAdvancedState(prev, new Date(now), prev.cycle ?? DEFAULT_CYCLE_CONFIG),
     )
-  }, [studyRoom, roomId, adapter])
-
-  const startFocusTimer = useCallback(async () => {
-    if (!studyRoom || !roomId) return
-    await adapter.startFocusTimer(roomId)
-  }, [studyRoom, roomId, adapter])
+  }, [studyRoom, roomId, adapter, now])
 
   const syncTimerCatchUp = useCallback(async () => {
     if (!studyRoom || !roomId) return
-    await adapter.syncTimerCatchUp(roomId)
-  }, [studyRoom, roomId, adapter])
+    await adapter.syncTimerCatchUp(roomId, now)
+  }, [studyRoom, roomId, adapter, now])
 
   useEffect(() => {
     if (!studyRoom && !useMock) return
@@ -214,6 +214,5 @@ export function useGlobalRoomTimer(
     cycle: config,
     cycleCount,
     advancePhase,
-    startFocusTimer,
   }
 }

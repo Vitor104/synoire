@@ -1,3 +1,4 @@
+import { isAccessInvitePending } from '@/lib/accessInvites/constants'
 import { HUB_ACCESS_STORAGE_KEY, type HubAccessGrant } from './types'
 
 function readGrants(): HubAccessGrant[] {
@@ -35,14 +36,17 @@ function isValidGrant(item: unknown): item is HubAccessGrant {
 export function grantHubAccessLocal(hubId: string, userId: string): HubAccessGrant {
   const grants = readGrants()
   const existing = grants.find((g) => g.hubId === hubId && g.userId === userId)
-  if (existing) return existing
+  if (existing && isAccessInvitePending(existing.grantedAt)) {
+    return existing
+  }
 
+  const without = grants.filter((g) => !(g.hubId === hubId && g.userId === userId))
   const grant: HubAccessGrant = {
     hubId,
     userId,
     grantedAt: new Date().toISOString(),
   }
-  writeGrants([...grants, grant])
+  writeGrants([...without, grant])
   return grant
 }
 

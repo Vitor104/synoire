@@ -1,4 +1,5 @@
 import { isDemoMode } from '@/lib/hubRooms/demo'
+import { isAccessGrantActive } from '@/lib/accessInvites/constants'
 import { listGrantsForHub } from '@/lib/hubAccess/storage'
 import { isHubJoined, readJoinedHubSlugs } from '@/lib/joinedHubs'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
@@ -44,17 +45,19 @@ async function userIsHubMember(hubId: string, userId: string): Promise<boolean> 
 
 async function userHasHubAccessGrant(hubId: string, userId: string): Promise<boolean> {
   if (!isSupabaseConfigured || isDemoMode) {
-    return listGrantsForHub(hubId).some((g) => g.userId === userId)
+    const grant = listGrantsForHub(hubId).find((g) => g.userId === userId)
+    return grant ? isAccessGrantActive(grant.grantedAt) : false
   }
 
   const supabase = getSupabase()
   if (!supabase) {
-    return listGrantsForHub(hubId).some((g) => g.userId === userId)
+    const grant = listGrantsForHub(hubId).find((g) => g.userId === userId)
+    return grant ? isAccessGrantActive(grant.grantedAt) : false
   }
 
   const { data, error } = await supabase
     .from('hub_access')
-    .select('hub_id')
+    .select('hub_id, created_at')
     .eq('hub_id', hubId)
     .eq('user_id', userId)
     .maybeSingle()
@@ -64,7 +67,8 @@ async function userHasHubAccessGrant(hubId: string, userId: string): Promise<boo
     return false
   }
 
-  return Boolean(data)
+  if (!data?.created_at) return false
+  return isAccessGrantActive(data.created_at)
 }
 
 function userIsHubCreator(hub: HubView, userId: string): boolean {

@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ACCESS_INVITE_COOLDOWN_MS } from '@/lib/accessInvites/constants'
 import {
   clearHubAccessForTests,
   grantHubAccessLocal,
@@ -26,14 +27,28 @@ vi.mock('@/lib/hubs/demo', () => ({
 
 describe('hubAccess storage (demo)', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-05-27T12:00:00.000Z'))
     clearHubAccessForTests()
   })
 
-  it('dedupes grants', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('dedupes grants within cooldown', () => {
     const first = grantHubAccessLocal('hub-1', 'user-vitor')
     const second = grantHubAccessLocal('hub-1', 'user-vitor')
-    expect(first.userId).toBe(second.userId)
+    expect(first.grantedAt).toBe(second.grantedAt)
     expect(listGrantsForHub('hub-1')).toHaveLength(1)
+  })
+
+  it('re-grants after cooldown with fresh timestamp', () => {
+    grantHubAccessLocal('hub-1', 'user-vitor')
+    vi.advanceTimersByTime(ACCESS_INVITE_COOLDOWN_MS + 1)
+    const second = grantHubAccessLocal('hub-1', 'user-vitor')
+    expect(listGrantsForHub('hub-1')).toHaveLength(1)
+    expect(new Date(second.grantedAt).getTime()).toBe(Date.now())
   })
 })
 

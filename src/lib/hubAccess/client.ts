@@ -1,3 +1,4 @@
+import { isAccessInvitePending } from '@/lib/accessInvites/constants'
 import { isDemoMode } from '@/lib/hubs/demo'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import {
@@ -22,7 +23,7 @@ export async function grantHubAccess(
     return grantHubAccessSupabase(hubId, userId)
   }
   const existing = listGrantsForHub(hubId).find((g) => g.userId === userId)
-  if (existing) {
+  if (existing && isAccessInvitePending(existing.grantedAt)) {
     return { ok: true, data: existing, alreadyGranted: true }
   }
   const grant = grantHubAccessLocal(hubId, userId)
