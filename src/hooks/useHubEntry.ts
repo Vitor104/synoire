@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { redeemHubInviteToken } from '@/lib/hubAccess/hubInviteTokens'
+import {
+  redeemHubInviteToken,
+  resolveHubInviteTarget,
+} from '@/lib/hubAccess/hubInviteTokens'
 import { canJoinHub, type CanJoinHubResult } from '@/lib/hubs/canJoinHub'
 import { getHubBySlug } from '@/lib/hubs/getHubBySlug'
 import type { HubView } from '@/lib/hubs/types'
@@ -30,6 +33,7 @@ export function useHubEntry(slug: string | undefined): {
   const [joinResult, setJoinResult] = useState<CanJoinHubResult | null>(null)
   const [joinLoading, setJoinLoading] = useState(Boolean(slug && user?.id))
   const [redeemState, setRedeemState] = useState<'idle' | 'loading' | 'invalid' | 'ok'>('idle')
+  const [inviteLookupError, setInviteLookupError] = useState<string | null>(null)
   const [entryTick, setEntryTick] = useState(0)
 
   const refreshEntry = () => setEntryTick((n) => n + 1)
@@ -38,32 +42,62 @@ export function useHubEntry(slug: string | undefined): {
     if (!slug) {
       setHub(null)
       setHubLoading(false)
+      setInviteLookupError(null)
       return
     }
 
     let cancelled = false
     setHubLoading(true)
+    setInviteLookupError(null)
 
-    void getHubBySlug(slug).then((result) => {
-      if (cancelled) return
-      if (result.ok && result.data) {
+    if (inviteToken) {
+      void resolveHubInviteTarget(slug, inviteToken).then((result) => {
+        if (cancelled) return
+        if (!result.ok) {
+          setHub(null)
+          setInviteLookupError(result.message)
+          setHubLoading(false)
+          return
+        }
         setHub(result.data)
-      } else {
-        setHub(null)
-      }
-      setHubLoading(false)
-    })
+        setHubLoading(false)
+      })
+    } else {
+      void getHubBySlug(slug).then((result) => {
+        if (cancelled) return
+        if (result.ok && result.data) {
+          setHub(result.data)
+        } else {
+          setHub(null)
+        }
+        setHubLoading(false)
+      })
+    }
 
     return () => {
       cancelled = true
     }
-  }, [slug, entryTick])
+  }, [slug, inviteToken, entryTick])
 
   useEffect(() => {
     if (!slug || !user?.id) {
       setJoinResult(null)
       setJoinLoading(false)
       setRedeemState('idle')
+      return
+    }
+
+    if (inviteLookupError) {
+      setJoinResult({ status: 'error', message: inviteLookupError })
+      setJoinLoading(false)
+      setRedeemState('idle')
+      return
+    }
+
+    if (inviteToken && !hubLoading && !hub?.id) {
+      setJoinResult(null)
+      setJoinLoading(false)
+      setRedeemState('invalid')
       return
     }
 
@@ -107,7 +141,7 @@ export function useHubEntry(slug: string | undefined): {
     return () => {
       cancelled = true
     }
-  }, [slug, user?.id, inviteToken, hub?.id, hubLoading, entryTick])
+  }, [slug, user?.id, inviteToken, hub?.id, hubLoading, inviteLookupError, entryTick])
 
   const entryStatus = useMemo((): HubEntryStatus => {
     if (!slug) return 'not_found'

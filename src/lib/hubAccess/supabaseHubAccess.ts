@@ -1,6 +1,5 @@
 import { isForbiddenError, mapHubQueryError } from '@/lib/hubs/errors'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDuplicateHubAccessError } from './errors'
 import { mapHubAccessRow } from './mapAccessRow'
 import type { HubAccessGrant, HubAccessResult, HubAccessRow } from './types'
 
@@ -17,11 +16,10 @@ export async function grantHubAccessSupabase(
     return { ok: false, message: 'Supabase não configurado.' }
   }
 
-  const { data, error } = await supabase
-    .from('hub_access')
-    .insert({ hub_id: hubId, user_id: userId })
-    .select('hub_id, user_id, created_at, profiles(username, avatar_url)')
-    .single()
+  const { data, error } = await supabase.rpc('grant_hub_access', {
+    p_hub_id: hubId,
+    p_user_id: userId,
+  })
 
   if (error) {
     if (import.meta.env.DEV) console.error('[hubAccess grant]', error)
@@ -32,17 +30,31 @@ export async function grantHubAccessSupabase(
         code: 'forbidden',
       }
     }
-    if (isDuplicateHubAccessError(error)) {
-      return {
-        ok: true,
-        data: { hubId, userId, grantedAt: new Date().toISOString() },
-        alreadyGranted: true,
-      }
-    }
     return { ok: false, message: mapHubQueryError(error.message) }
   }
 
-  return { ok: true, data: mapHubAccessRow(data as unknown as HubAccessRow) }
+  const payload = data as
+    | {
+        hub_id?: string
+        user_id?: string
+        created_at?: string
+        already_granted?: boolean
+      }
+    | null
+
+  if (!payload?.hub_id || !payload.user_id || !payload.created_at) {
+    return { ok: false, message: 'Não foi possível liberar o acesso ao hub.' }
+  }
+
+  return {
+    ok: true,
+    data: {
+      hubId: payload.hub_id,
+      userId: payload.user_id,
+      grantedAt: payload.created_at,
+    },
+    alreadyGranted: Boolean(payload.already_granted),
+  }
 }
 
 export async function listHubAccessSupabase(

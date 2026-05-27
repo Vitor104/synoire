@@ -1,4 +1,7 @@
 import { isDemoMode } from '@/lib/hubRooms/demo'
+import { getDemoHubBySlug } from '@/lib/hubs/demo'
+import { mapHubRow } from '@/lib/hubs/mapHubRow'
+import type { HubRow, HubView } from '@/lib/hubs/types'
 import { isHubJoined, readJoinedHubSlugs, writeJoinedHubSlugs } from '@/lib/joinedHubs'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { grantHubAccess } from './client'
@@ -10,6 +13,15 @@ import {
 export type InviteTokenResult<T> =
   | { ok: true; data: T }
   | { ok: false; message: string }
+
+function resolveRpcHubRow(data: unknown): HubRow | null {
+  if (!data) return null
+  if (Array.isArray(data)) {
+    const [first] = data
+    return first && typeof first === 'object' ? (first as HubRow) : null
+  }
+  return typeof data === 'object' ? (data as HubRow) : null
+}
 
 export async function getOrCreateHubInviteToken(
   hubId: string,
@@ -99,4 +111,46 @@ export async function redeemHubInviteToken(
 
   const payload = data as { ok?: boolean } | null
   return { ok: true, data: Boolean(payload?.ok) }
+}
+
+export async function resolveHubInviteTarget(
+  slug: string,
+  token: string,
+): Promise<InviteTokenResult<HubView | null>> {
+  const normalizedSlug = slug.trim()
+  const normalizedToken = token.trim()
+
+  if (!normalizedSlug || !normalizedToken) {
+    return { ok: true, data: null }
+  }
+
+  if (isDemoMode || !isSupabaseConfigured) {
+    const hub = getDemoHubBySlug(normalizedSlug) ?? null
+    if (!hub || !redeemHubInviteTokenLocal(hub.id, normalizedToken)) {
+      return { ok: true, data: null }
+    }
+    return { ok: true, data: hub }
+  }
+
+  const supabase = getSupabase()
+  if (!supabase) {
+    const hub = getDemoHubBySlug(normalizedSlug) ?? null
+    if (!hub || !redeemHubInviteTokenLocal(hub.id, normalizedToken)) {
+      return { ok: true, data: null }
+    }
+    return { ok: true, data: hub }
+  }
+
+  const { data, error } = await supabase.rpc('resolve_hub_invite_target', {
+    p_slug: normalizedSlug,
+    p_token: normalizedToken,
+  })
+
+  if (error) {
+    if (import.meta.env.DEV) console.error('[hubInviteTokens resolve]', error)
+    return { ok: false, message: 'Não foi possível validar o link de convite.' }
+  }
+
+  const row = resolveRpcHubRow(data)
+  return { ok: true, data: row ? mapHubRow(row) : null }
 }

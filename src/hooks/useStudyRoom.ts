@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getHubRoomsAdapter, type StudyRoom } from '@/lib/hubRooms'
 import { filterVisibleRooms } from '@/lib/hubRooms/utils'
 import { useRoomPresence } from '@/hooks/useRoomPresence'
@@ -6,12 +6,21 @@ import { useRoomPresence } from '@/hooks/useRoomPresence'
 export function useStudyRoom(roomId: string | undefined) {
   const [room, setRoom] = useState<StudyRoom | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshTick, setRefreshTick] = useState(0)
+  const [completedTick, setCompletedTick] = useState(-1)
+  const [loadedRoomId, setLoadedRoomId] = useState<string | undefined>(undefined)
   const { presentCount, emptySince } = useRoomPresence(roomId)
+
+  const refreshRoom = useCallback(() => {
+    setRefreshTick((tick) => tick + 1)
+  }, [])
 
   useEffect(() => {
     if (!roomId) {
       setRoom(null)
       setLoading(false)
+      setCompletedTick(refreshTick)
+      setLoadedRoomId(undefined)
       return
     }
 
@@ -32,7 +41,11 @@ export function useStudyRoom(roomId: string | undefined) {
       } catch {
         if (!cancelled) setRoom(null)
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+          setCompletedTick(refreshTick)
+          setLoadedRoomId(roomId)
+        }
       }
     }
 
@@ -45,7 +58,7 @@ export function useStudyRoom(roomId: string | undefined) {
       cancelled = true
       unsub()
     }
-  }, [roomId])
+  }, [roomId, refreshTick])
 
   const roomWithPresence = useMemo(() => {
     if (!room) return null
@@ -58,5 +71,7 @@ export function useStudyRoom(roomId: string | undefined) {
     return merged
   }, [room, presentCount, emptySince])
 
-  return { room: roomWithPresence, loading, presentCount }
+  const roomLoading = loading || (Boolean(roomId) && (loadedRoomId !== roomId || completedTick !== refreshTick))
+
+  return { room: roomWithPresence, loading: roomLoading, presentCount, refreshRoom }
 }

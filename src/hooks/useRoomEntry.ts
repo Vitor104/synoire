@@ -24,7 +24,7 @@ export function useRoomEntry(roomId: string | undefined): {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const inviteToken = searchParams.get('invite')?.trim() || null
-  const { room, loading: roomLoading, presentCount } = useStudyRoom(roomId)
+  const { room, loading: roomLoading, presentCount, refreshRoom } = useStudyRoom(roomId)
   const [joinResult, setJoinResult] = useState<CanJoinRoomResult | null>(null)
   const [joinLoading, setJoinLoading] = useState(Boolean(roomId && user?.id))
   const [redeemState, setRedeemState] = useState<'idle' | 'loading' | 'invalid' | 'ok'>('idle')
@@ -58,7 +58,12 @@ export function useRoomEntry(roomId: string | undefined): {
           setJoinLoading(false)
           return
         }
-        setRedeemState(redeem.data ? 'ok' : 'invalid')
+        if (redeem.data) {
+          setRedeemState('ok')
+          refreshRoom()
+        } else {
+          setRedeemState('invalid')
+        }
       } else {
         setRedeemState('idle')
       }
@@ -75,7 +80,7 @@ export function useRoomEntry(roomId: string | undefined): {
     return () => {
       cancelled = true
     }
-  }, [roomId, user?.id, inviteToken])
+  }, [roomId, user?.id, inviteToken, refreshRoom])
 
   const entryStatus = useMemo((): RoomEntryStatus => {
     if (!roomId) return 'not_found'

@@ -7,6 +7,7 @@ import {
 import {
   getOrCreateHubInviteToken,
   redeemHubInviteToken,
+  resolveHubInviteTarget,
 } from '@/lib/hubAccess/hubInviteTokens'
 import { clearJoinedHubsForTests } from '@/lib/joinedHubs/storage'
 
@@ -94,5 +95,32 @@ describe('hubInviteTokens supabase', () => {
       ok: false,
       message: 'Não foi possível gerar o link de convite.',
     })
+  })
+
+  it('resolves a valid invite target via rpc', async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        id: 'hub-1',
+        slug: 'privado-pf',
+        name: 'Mentoria PF',
+        is_private: true,
+        creator_id: 'creator-1',
+        icon_emoji: null,
+      },
+      error: null,
+    })
+
+    const result = await resolveHubInviteTarget('privado-pf', 'hub-token')
+
+    expect(mocks.rpc).toHaveBeenCalledWith('resolve_hub_invite_target', {
+      p_slug: 'privado-pf',
+      p_token: 'hub-token',
+    })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data?.id).toBe('hub-1')
+      expect(result.data?.slug).toBe('privado-pf')
+      expect(result.data?.isPrivate).toBe(true)
+    }
   })
 })
