@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=denonext'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
-import { normalizeFrontendUrl } from '../_shared/frontendUrl.ts'
+import { resolveFrontendBaseUrl } from '../_shared/frontendUrl.ts'
 
 type CheckoutBody = {
   user_id?: string
@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
   const stripePriceId = Deno.env.get('STRIPE_PRICE_ID')
   let baseUrl: string
   try {
-    baseUrl = normalizeFrontendUrl(Deno.env.get('FRONTEND_URL'))
+    baseUrl = resolveFrontendBaseUrl(req)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Invalid FRONTEND_URL'
     console.error(message)
@@ -111,8 +111,8 @@ Deno.serve(async (req) => {
       customer: customerId,
       client_reference_id: user.id,
       line_items: [{ price: stripePriceId, quantity: 1 }],
-      success_url: `${baseUrl}/painel?payment=success`,
-      cancel_url: `${baseUrl}/painel?payment=cancelled`,
+      success_url: `${baseUrl}/billing/retorno?payment=success`,
+      cancel_url: `${baseUrl}/billing/retorno?payment=cancelled`,
       metadata: { supabase_user_id: user.id },
     })
 

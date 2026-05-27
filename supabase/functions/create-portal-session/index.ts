@@ -1,27 +1,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 import Stripe from 'https://esm.sh/stripe@17.7.0?target=denonext'
 import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
-import { normalizeFrontendUrl } from '../_shared/frontendUrl.ts'
+import { resolveFrontendBaseUrl } from '../_shared/frontendUrl.ts'
 
 const PROFILE_RETURN_PATH = '/perfil'
-
-function buildReturnUrl(req: Request): string {
-  const origin = req.headers.get('origin')?.trim()
-  if (origin) {
-    try {
-      const url = new URL(origin)
-      if (url.protocol === 'http:' || url.protocol === 'https:') {
-        return `${url.protocol}//${url.host}${PROFILE_RETURN_PATH}`
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Invalid origin header'
-      console.warn('Invalid origin header', message)
-    }
-  }
-
-  const fallbackBaseUrl = normalizeFrontendUrl(Deno.env.get('FRONTEND_URL'))
-  return `${fallbackBaseUrl}${PROFILE_RETURN_PATH}`
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -43,7 +25,7 @@ Deno.serve(async (req) => {
 
   let returnUrl: string
   try {
-    returnUrl = buildReturnUrl(req)
+    returnUrl = `${resolveFrontendBaseUrl(req)}${PROFILE_RETURN_PATH}`
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Invalid return URL'
     console.error('Could not build portal return URL', message)

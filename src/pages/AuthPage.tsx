@@ -17,6 +17,7 @@ import {
   OAUTH_SESSION_FAILED_MESSAGE,
 } from '@/lib/auth/oauthCallback'
 import { resolvePostAuthRedirect } from '@/lib/auth/resolvePostAuthRedirect'
+import { consumeBillingReturnFlash } from '@/lib/billing/billingReturnFlash'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import {
   pageStaggerContainer,
@@ -64,6 +65,12 @@ export function AuthPage() {
       setError(urlError)
       clearOAuthCallbackFromUrl()
     }
+  }, [])
+
+  useEffect(() => {
+    const billingMessage = consumeBillingReturnFlash()
+    if (!billingMessage) return
+    setInfo(billingMessage)
   }, [])
 
   useEffect(() => {

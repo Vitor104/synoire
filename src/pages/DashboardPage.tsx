@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
 import { AppToast } from '@/components/ui/AppToast'
-import { useUserPlan } from '@/contexts/UserPlanContext'
 import { motion, type Variants } from 'motion/react'
 import { EvolutionTrails } from '@/components/dashboard/EvolutionTrails'
 import { FocusPatterns } from '@/components/dashboard/FocusPatterns'
@@ -11,6 +9,7 @@ import { GlowLockedOverlay } from '@/components/premium/GlowLockedOverlay'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useStudySessions } from '@/hooks/useStudySessions'
 import { useUserStats } from '@/hooks/useUserStats'
+import { consumeBillingReturnFlash } from '@/lib/billing/billingReturnFlash'
 import {
   buildWeeklyBars,
   formatStudyHours,
@@ -63,39 +62,14 @@ function MetricColumn({
 }
 
 export function DashboardPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const { waitForGlowActivation } = useUserPlan()
   const [toast, setToast] = useState({ message: '', visible: false })
-  const paymentHandledRef = useRef(false)
   const reduced = usePrefersReducedMotion()
 
   useEffect(() => {
-    if (paymentHandledRef.current) return
-    const payment = searchParams.get('payment')
-    if (payment !== 'success' && payment !== 'cancelled') return
-
-    paymentHandledRef.current = true
-
-    if (payment === 'success') {
-      void (async () => {
-        const activated = await waitForGlowActivation({ clearDevOverride: true })
-        setToast({
-          message:
-            activated ?
-              'Bem-vindo ao Synoire Glow! Seus recursos premium foram ativados.'
-            : 'Pagamento recebido. A ativação pode levar alguns instantes — atualize a página em breve.',
-          visible: true,
-        })
-      })()
-    } else {
-      setToast({
-        message: 'O pagamento não foi concluído. Você pode tentar novamente quando quiser.',
-        visible: true,
-      })
-    }
-
-    setSearchParams({}, { replace: true })
-  }, [searchParams, setSearchParams, waitForGlowActivation])
+    const message = consumeBillingReturnFlash()
+    if (!message) return
+    setToast({ message, visible: true })
+  }, [])
   const c = pageStaggerContainer(reduced)
   const item = pageStaggerItem(reduced)
   const listInner = pageStaggerListInner(reduced)

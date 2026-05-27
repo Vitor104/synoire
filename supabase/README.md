@@ -47,7 +47,7 @@ Defina no projeto remoto (nunca no front-end):
 | `STRIPE_SECRET_KEY` | `sk_test_...` |
 | `STRIPE_PRICE_ID` | `price_1TYey02abnSfEi4yqxkvjxz0` (Synoire Glow — modo teste) |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` (endpoint de webhook após deploy) |
-| `FRONTEND_URL` | URL **com protocolo**: `http://localhost:5173` (dev) ou `https://seu-app.netlify.app` (prod). Evite valor vazio, aspas ou só `localhost:5173` sem `http://` |
+| `FRONTEND_URL` | URL **com protocolo**: `http://localhost:5173` (dev) ou `https://seu-app.netlify.app` (prod). No remoto, mantenha esse secret preenchido com a URL publica real do app. Evite valor vazio, aspas ou só `localhost:5173` sem `http://` |
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` são injetados automaticamente nas Edge Functions.
 
@@ -74,9 +74,15 @@ Após o deploy, confirme no Dashboard (Edge Functions → `stripe-webhook`) que 
 3. Eventos: `checkout.session.completed`, `customer.subscription.deleted`, `customer.subscription.updated`  
 4. Copiar **Signing secret** → secret `STRIPE_WEBHOOK_SECRET`
 
+### Retorno do Checkout
+
+- `create-checkout` agora prioriza a `Origin` da requisição para montar `success_url` e `cancel_url`, com fallback para `FRONTEND_URL` somente quando a origin nao estiver disponivel.
+- O retorno do Stripe Checkout aponta para `/billing/retorno`, uma rota publica que conclui o fluxo e redireciona o usuario para `/painel` ou `/entrar` sem depender de refresh manual.
+- Antes de testar no mobile em producao, confirme em **Dashboard -> Edge Functions -> Secrets** que `FRONTEND_URL` esta com a URL publica correta do app.
+
 ### Customer Portal
 
-- A função `create-portal-session` reutiliza `STRIPE_SECRET_KEY` e, quando `Origin` não vier na requisição, usa `FRONTEND_URL` como fallback seguro para montar o `return_url`.
+- A função `create-portal-session` reutiliza `STRIPE_SECRET_KEY`, prioriza a `Origin` da requisição e usa `FRONTEND_URL` como fallback seguro para montar o `return_url`.
 - O retorno do portal aponta para `/perfil`, que é a rota real de perfil/configurações do app.
 
 Se o webhook falhou com 401 antes da correção, reenvie o evento `checkout.session.completed` em **Recent deliveries** → **Resend** (após deploy com JWT desligado). Pagamentos já concluídos podem exigir esse reenvio para preencher `stripe_subscription_id` no perfil.

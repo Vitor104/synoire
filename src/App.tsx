@@ -12,6 +12,7 @@ import { RoomInvitesProvider } from '@/contexts/RoomInvitesContext'
 import { StudyPartnersProvider } from '@/contexts/StudyPartnersContext'
 import { UserPlanProvider } from '@/contexts/UserPlanContext'
 import { AuthPage } from '@/pages/AuthPage'
+import { BillingReturnPage } from '@/pages/BillingReturnPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { HomePage } from '@/pages/HomePage'
 import { HubDetailPage } from '@/pages/HubDetailPage'
@@ -26,6 +27,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/entrar" element={<AuthPage />} />
+      <Route path="/billing/retorno" element={<BillingReturnPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />
       <Route element={<RequireAuth />}>

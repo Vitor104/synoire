@@ -179,4 +179,11 @@ describe('rotas (smoke, sem backend)', () => {
     expect(screen.getByRole('tab', { name: /criar conta/i })).toBeInTheDocument()
     expect(screen.getByLabelText(/^e-mail$/i)).toBeInTheDocument()
   })
+
+  it('renderiza a rota pública de retorno do billing', () => {
+    renderAt('/billing/retorno?payment=success')
+    expect(
+      screen.getByRole('heading', { name: /confirmando seu retorno/i }),
+    ).toBeInTheDocument()
+  })
 })
