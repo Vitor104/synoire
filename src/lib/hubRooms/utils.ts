@@ -1,3 +1,4 @@
+import { getEffectiveCycleDurations, getEffectivePrepSeconds } from '@/lib/e2eTestMode'
 import { getCycleDurations } from './cycles'
 import { resolveTimerCatchUp } from './resolveTimerCatchUp'
 import {
@@ -14,7 +15,6 @@ import type {
 } from './types'
 import {
   ROOM_EMPTY_TTL_HOURS,
-  ROOM_PREP_SECONDS,
   THEME_MAX_LENGTH as MAX_LEN,
 } from './types'
 
@@ -52,12 +52,13 @@ export function getPrepRemainingSeconds(
   now: Date | number = Date.now(),
 ): number {
   if (state.status !== 'idle') return 0
-  if (!state.started_at) return ROOM_PREP_SECONDS
+  const prepSeconds = getEffectivePrepSeconds()
+  if (!state.started_at) return prepSeconds
   const nowMs = typeof now === 'number' ? now : now.getTime()
   const startMs = new Date(state.started_at).getTime()
-  if (!Number.isFinite(startMs)) return ROOM_PREP_SECONDS
+  if (!Number.isFinite(startMs)) return prepSeconds
   const elapsed = Math.max(0, Math.floor((nowMs - startMs) / 1000))
-  return Math.max(0, ROOM_PREP_SECONDS - elapsed)
+  return Math.max(0, prepSeconds - elapsed)
 }
 
 export function isPrepComplete(
@@ -85,7 +86,7 @@ export function buildCreatePayload(
 }
 
 export function timerPayloadToCycleConfig(state: RoomTimerPayload): RoomCycleConfig {
-  return { focusSec: state.focus_sec, breakSec: state.break_sec }
+  return getEffectiveCycleDurations(state.focus_sec, state.break_sec)
 }
 
 export function isRoomExpired(room: StudyRoom, nowMs = Date.now()): boolean {
@@ -141,7 +142,7 @@ export function formatRoomCardTimeLabel(
     return `Come\u00e7a em ${formatTimerSeconds(secs)}`
   }
 
-  return `Come\u00e7a em ${formatTimerSeconds(ROOM_PREP_SECONDS)}`
+  return `Come\u00e7a em ${formatTimerSeconds(getEffectivePrepSeconds())}`
 }
 
 export function timerPayloadToRoomPhase(

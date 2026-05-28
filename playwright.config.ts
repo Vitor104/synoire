@@ -34,8 +34,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run dev -- --mode test',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
+    env: {
+      ...process.env,
+      VITE_E2E_TEST_MODE: 'true',
+    },
   },
 })

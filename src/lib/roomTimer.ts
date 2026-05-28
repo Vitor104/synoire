@@ -1,4 +1,5 @@
 import { CYCLES_BEFORE_LONG_BREAK, LONG_BREAK_SECONDS } from '@/lib/hubRooms/cycles'
+import { isE2eTestMode, E2E_SEGMENT_SEC } from '@/lib/e2eTestMode'
 
 export const FOCUS_SECONDS = 25 * 60
 export const BREAK_SECONDS = 5 * 60
@@ -28,7 +29,7 @@ export function getSegmentDuration(
   config: RoomCycleConfig = DEFAULT_CYCLE_CONFIG,
 ): number {
   if (phase === 'focus') return config.focusSec
-  if (phase === 'long_break') return LONG_BREAK_SECONDS
+  if (phase === 'long_break') return isE2eTestMode ? E2E_SEGMENT_SEC : LONG_BREAK_SECONDS
   return config.breakSec
 }
 

@@ -1,3 +1,4 @@
+import { isE2eTestMode, E2E_SEGMENT_SEC } from '@/lib/e2eTestMode'
 import type { FocusCycle } from './types'
 
 export type CycleDurations = {
@@ -18,6 +19,9 @@ export const FOCUS_CYCLE_OPTIONS: { value: FocusCycle; label: string }[] = [
 ]
 
 export function getCycleDurations(cycle: FocusCycle): CycleDurations {
+  if (isE2eTestMode) {
+    return { focusSec: E2E_SEGMENT_SEC, breakSec: E2E_SEGMENT_SEC }
+  }
   return CYCLE_MAP[cycle]
 }
 

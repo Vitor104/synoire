@@ -2,7 +2,7 @@ import { getCyclePosition, type RoomCycleConfig, type RoomPhase } from '@/lib/ro
 import { advanceTimerOnSegmentComplete } from './advanceTimerSegment'
 import { timerPayloadToCycleConfig } from './utils'
 import type { RoomTimerPayload, RoomTimerStatus } from './types'
-import { ROOM_PREP_SECONDS } from './types'
+import { getEffectivePrepSeconds } from '@/lib/e2eTestMode'
 
 const MAX_CATCH_UP_STEPS = 10_000
 
@@ -84,7 +84,7 @@ export function resolveTimerCatchUp(
     if (!Number.isFinite(prepStartMs)) {
       return { resolved: state, changed: false }
     }
-    const prepEndMs = prepStartMs + ROOM_PREP_SECONDS * 1000
+    const prepEndMs = prepStartMs + getEffectivePrepSeconds() * 1000
     if (nowMs < prepEndMs) {
       return { resolved: state, changed: false }
     }

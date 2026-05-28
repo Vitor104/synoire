@@ -1,11 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { ensurePainelReady } from './helpers'
 
 test('deve carregar o dashboard e exibir a lista de Hubs', async ({ page }) => {
-  await page.goto('/painel')
+  await ensurePainelReady(page)
 
-  await expect(page.getByRole('heading', { name: /painel/i })).toBeVisible({
-    timeout: 15_000,
-  })
   await expect(page.getByText('Hoje')).toBeVisible()
   await expect(page.getByText('Meta semanal')).toBeVisible()
 

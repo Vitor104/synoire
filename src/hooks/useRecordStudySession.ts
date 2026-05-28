@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getCycleDurations } from '@/lib/hubRooms'
+import { getFocusMinutesForSessionRecord } from '@/lib/e2eTestMode'
 import type { StudyRoom } from '@/lib/hubRooms'
 import type { RoomPhase } from '@/lib/roomTimer'
 
@@ -53,18 +53,37 @@ export function useRecordStudySession({
 }: UseRecordStudySessionArgs) {
   const { user } = useAuth()
   const recordingRef = useRef(false)
+  const prevPhaseRef = useRef(phase)
+  const lastFocusStartedAtRef = useRef<string | null>(null)
 
   useEffect(() => {
+    if (phase === 'focus' && !isIdle) {
+      lastFocusStartedAtRef.current = startedAtKey(startedAt)
+    }
+
+    const prevPhase = prevPhaseRef.current
+    prevPhaseRef.current = phase
+
+    const focusSegmentCompleted =
+      (phase === 'focus' && isSegmentComplete) ||
+      (prevPhase === 'focus' &&
+        (phase === 'break' || phase === 'long_break'))
+
     if (!roomId || !studyRoom || !user?.id) return
     if (sessionMode !== 'active') return
-    if (isIdle || !isSegmentComplete || phase !== 'focus') return
-    const focusStartedAt = startedAtKey(startedAt)
+    if (isIdle || !focusSegmentCompleted) return
+
+    const focusStartedAt = lastFocusStartedAtRef.current ?? startedAtKey(startedAt)
+    if (!focusStartedAt) return
+
+    if (phase !== 'focus') {
+      lastFocusStartedAtRef.current = null
+    }
+
     if (!tryClaimSessionRecord(roomId, focusStartedAt)) return
     if (recordingRef.current) return
 
-    const durationMinutes = Math.round(
-      getCycleDurations(studyRoom.focus_cycle).focusSec / 60,
-    )
+    const durationMinutes = getFocusMinutesForSessionRecord(studyRoom.focus_cycle)
 
     recordingRef.current = true
     void recordSession(roomId, durationMinutes).then((result) => {
