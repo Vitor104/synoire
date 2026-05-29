@@ -3,7 +3,15 @@ import { loadEnv } from 'vite'
 
 const env = loadEnv('development', process.cwd(), '')
 
-for (const key of ['VITE_TEST_EMAIL', 'VITE_TEST_PASSWORD'] as const) {
+const e2eEnvKeys = [
+  'VITE_TEST_EMAIL',
+  'VITE_TEST_PASSWORD',
+  'VITE_TEST_USER2_EMAIL',
+  'VITE_TEST_USER2_PASSWORD',
+  'VITE_TEST_USER2_USERNAME',
+] as const
+
+for (const key of e2eEnvKeys) {
   if (env[key]) process.env[key] = env[key]
 }
 
