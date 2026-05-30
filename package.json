@@ -11,6 +11,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
+    "test:load": "k6 run k6/dashboard-load.js -e SUPABASE_URL=http://127.0.0.1:54321 -e SUPABASE_ANON_KEY=sb_publishable_8JFcQj_FtuYURduI30tVZg_DZc0YeKv -e TEST_EMAIL= -e TEST_PASSWORD=",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,11 +24,12 @@
     "recharts": "^3.8.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.52.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.52.0",
     "@tailwindcss/vite": "^4.3.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/k6": "^2.0.0",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

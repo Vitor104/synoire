@@ -14,7 +14,6 @@ import {
   clearOAuthCallbackFromUrl,
   getOAuthCallbackError,
 } from '@/lib/auth/oauthCallback'
-import { isPrivateLanHostname } from '@/lib/auth/isPrivateLanHostname'
 import { consumeOAuthReturnFlash } from '@/lib/auth/oauthReturnFlash'
 import { resolvePostAuthRedirect } from '@/lib/auth/resolvePostAuthRedirect'
 import { consumeBillingReturnFlash } from '@/lib/billing/billingReturnFlash'
@@ -78,9 +77,6 @@ export function AuthPage() {
     if (!oauthMessage) return
     setError(oauthMessage)
   }, [])
-
-  const showLanOAuthHint =
-    import.meta.env.DEV && isPrivateLanHostname(window.location.hostname)
 
   const goToPainel = () => {
     navigate(postAuthPath)
@@ -322,13 +318,6 @@ export function AuthPage() {
         >
           Continuar com Google
         </button>
-        {showLanOAuthHint && (
-          <p className="mt-3 text-xs leading-relaxed text-secondary">
-            Dev na rede local: cadastre{' '}
-            <code className="text-primary">{window.location.origin}/**</code> em Supabase →
-            Authentication → Redirect URLs (e evite Site URL em localhost no celular).
-          </p>
-        )}
       </motion.div>
 
       <motion.p variants={item} className="mt-6 text-center text-xs text-secondary">
