@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode } from './demo'
 import type { PartnershipsResult } from './types'
 
 export type ProfileLookup = {
@@ -20,8 +19,8 @@ export async function findProfileByUsername(
     return { ok: false, message: 'Username inválido.' }
   }
 
-  if (isDemoMode || !isSupabaseConfigured) {
-    return { ok: false, message: 'Estudante não encontrado.' }
+  if (!isSupabaseConfigured) {
+    return { ok: false, message: 'Supabase não configurado.' }
   }
 
   const supabase = getSupabase()

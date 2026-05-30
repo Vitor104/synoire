@@ -1,5 +1,4 @@
 import { isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode } from '@/lib/hubRooms/demo'
 import { isAccessGrantActive } from '@/lib/accessInvites/constants'
 import {
   acceptRoomAccessGrant as acceptLocal,
@@ -27,7 +26,7 @@ export {
 export type { IncomingRoomInvite } from './types'
 
 function useSupabase(): boolean {
-  return isSupabaseConfigured && !isDemoMode
+  return isSupabaseConfigured
 }
 
 export async function grantRoomAccess(

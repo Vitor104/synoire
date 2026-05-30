@@ -1,5 +1,4 @@
 import { isAccessInvitePending } from '@/lib/accessInvites/constants'
-import { isDemoMode } from '@/lib/hubs/demo'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import {
   grantHubAccessSupabase,
@@ -12,7 +11,7 @@ import {
 import type { HubAccessGrant, HubAccessResult } from './types'
 
 function useSupabase(): boolean {
-  return isSupabaseConfigured && !isDemoMode
+  return isSupabaseConfigured
 }
 
 export async function grantHubAccess(

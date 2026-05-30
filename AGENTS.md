@@ -19,7 +19,6 @@ Plataforma web social de produtividade para **concurseiros**: salas de estudo em
 
 - `src/lib/supabase.ts` — cliente singleton; exige `VITE_SUPABASE_*` no `.env`.
 - `src/pages/*` — rotas do MVP em construção.
-- `src/data/sampleHubs.ts` — hubs estáticos até existir tabela no Supabase.
 
 ## MVP (primeira versão)
 

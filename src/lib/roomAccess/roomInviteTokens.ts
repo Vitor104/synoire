@@ -1,4 +1,3 @@
-import { isDemoMode } from '@/lib/hubRooms/demo'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { grantRoomAccess } from './client'
 import {
@@ -17,7 +16,7 @@ export async function getOrCreateRoomInviteToken(
     return { ok: false, message: 'Sala inválida.' }
   }
 
-  if (isDemoMode || !isSupabaseConfigured) {
+  if (!isSupabaseConfigured) {
     return {
       ok: true,
       data: getOrCreateRoomInviteTokenLocal(roomId, roomId),
@@ -57,7 +56,7 @@ export async function redeemRoomInviteToken(
     return { ok: true, data: false }
   }
 
-  if (isDemoMode || !isSupabaseConfigured) {
+  if (!isSupabaseConfigured) {
     const valid = redeemRoomInviteTokenLocal(roomId, token)
     if (valid) {
       await grantRoomAccess(roomId, userId)

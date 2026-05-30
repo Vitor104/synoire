@@ -23,11 +23,8 @@ test('completa ciclo foco → pausa → foco e registra tempo de estudo', async 
   const publicRoomLink = page.getByRole('link', {
     name: /^Entrar na sala (?!privada\b)/,
   })
-  await expect(publicRoomLink.first()).toBeVisible({
-    timeout: 15_000,
-    message:
-      'Nenhuma sala pública visível no hub Receita Federal. Crie uma sala pública (não privada) e ativa (< 24h vazia).',
-  })
+  // Requer sala pública visível no hub Receita Federal (< 24h vazia).
+  await expect(publicRoomLink.first()).toBeVisible({ timeout: 15_000 })
   await publicRoomLink.first().click()
 
   await expect(page).toHaveURL(/\/salas\//, { timeout: 15_000 })

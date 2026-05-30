@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode } from './demo'
 import { getPartnerUserId } from './mapPartnershipRow'
 import type { PartnershipRow } from './types'
 
@@ -8,7 +7,7 @@ export async function listPartnershipRowsForPair(
   userId: string,
   partnerUserId: string,
 ): Promise<PartnershipRow[]> {
-  if (isDemoMode || !isSupabaseConfigured) return []
+  if (!isSupabaseConfigured) return []
 
   const supabase = getSupabase()
   if (!supabase) return []

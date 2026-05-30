@@ -8,7 +8,6 @@ export { createPartnership } from './createPartnership'
 export { deletePartnership } from './deletePartnership'
 export { findProfileByUsername } from './findProfileByUsername'
 export { fetchPartnerEnrichment } from './fetchPartnerEnrichment'
-export { isDemoMode } from './demo'
 export { listPartnerships } from './listPartnerships'
 export { loadPartnerLists } from './loadPartnerLists'
 export {

@@ -50,10 +50,10 @@ vi.mock('@/hooks/useRoomEntry', () => ({
 }))
 
 vi.mock('@/hooks/useHubEntry', async () => {
-  const { SAMPLE_HUBS } = await import('@/data/sampleHubs')
+  const { TEST_HUBS } = await import('@/test/fixtures/hubs')
   return {
     useHubEntry: (slug?: string) => {
-      const hub = SAMPLE_HUBS.find((h) => h.slug === slug) ?? null
+      const hub = TEST_HUBS.find((h) => h.slug === slug) ?? null
       return {
         hub,
         entryStatus: hub ? ('ready' as const) : ('not_found' as const),
@@ -67,20 +67,20 @@ vi.mock('@/hooks/useHubEntry', async () => {
 
 vi.mock('@/lib/hubs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/hubs')>()
-  const { SAMPLE_HUBS } = await import('@/data/sampleHubs')
+  const { TEST_HUBS } = await import('@/test/fixtures/hubs')
   return {
     ...actual,
-    listHubs: vi.fn(async () => ({ ok: true as const, data: SAMPLE_HUBS })),
+    listHubs: vi.fn(async () => ({ ok: true as const, data: TEST_HUBS })),
     getHubBySlug: vi.fn(async (slug: string) => ({
       ok: true as const,
-      data: SAMPLE_HUBS.find((h) => h.slug === slug) ?? null,
+      data: TEST_HUBS.find((h) => h.slug === slug) ?? null,
     })),
     listUserHubs: vi.fn(async () => ({ ok: true as const, data: [] })),
     joinUserHub: vi.fn(async () => ({ ok: true as const, data: undefined })),
     leaveUserHub: vi.fn(async () => ({ ok: true as const, data: undefined })),
     createPrivateHub: vi.fn(async () => ({
       ok: true as const,
-      data: SAMPLE_HUBS[0],
+      data: TEST_HUBS[0],
     })),
   }
 })

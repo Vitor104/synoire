@@ -143,6 +143,10 @@ export function HubsPage() {
         <motion.p variants={item} className="text-sm text-secondary">
           Carregando hubs…
         </motion.p>
+      ) : hubs.length === 0 && !error ? (
+        <motion.p variants={item} className="text-sm text-secondary">
+          Nenhum hub encontrado.
+        </motion.p>
       ) : (
         <motion.ul
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"

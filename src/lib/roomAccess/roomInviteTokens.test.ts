@@ -8,16 +8,9 @@ import { getOrCreateRoomInviteToken, redeemRoomInviteToken } from './roomInviteT
 
 const mocks = vi.hoisted(() => ({
   state: {
-    demoMode: true,
     supabaseConfigured: false,
   },
   rpc: vi.fn(),
-}))
-
-vi.mock('@/lib/hubRooms/demo', () => ({
-  get isDemoMode() {
-    return mocks.state.demoMode
-  },
 }))
 
 vi.mock('@/lib/supabase', () => ({
@@ -32,9 +25,8 @@ vi.mock('@/lib/supabase', () => ({
       : null,
 }))
 
-describe('roomInviteTokens demo', () => {
+describe('roomInviteTokens local storage', () => {
   beforeEach(() => {
-    mocks.state.demoMode = true
     mocks.state.supabaseConfigured = false
     mocks.rpc.mockReset()
     clearRoomAccessForTests()
@@ -58,7 +50,6 @@ describe('roomInviteTokens demo', () => {
 
 describe('roomInviteTokens supabase', () => {
   beforeEach(() => {
-    mocks.state.demoMode = false
     mocks.state.supabaseConfigured = true
     mocks.rpc.mockReset()
     clearRoomAccessForTests()

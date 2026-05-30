@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getMockRoomTimerState } from '@/data/mockRoomTimer'
 import {
   getHubRoomsAdapter,
   getPrepRemainingSeconds,
@@ -7,10 +6,7 @@ import {
   timerPayloadToCycleConfig,
   type StudyRoom,
 } from '@/lib/hubRooms'
-import { isDemoMode } from '@/lib/hubRooms/demo'
-import { isSupabaseConfigured } from '@/lib/supabase'
 import {
-  buildAdvancedState,
   DEFAULT_CYCLE_CONFIG,
   getCyclePosition,
   secondsUntilNextFocus,
@@ -40,15 +36,6 @@ function tryClaimLeader(roomId: string): boolean {
   } catch {
     return true
   }
-}
-
-function shouldUseMockTimer(
-  roomId: string | undefined,
-  studyRoom: StudyRoom | null | undefined,
-): boolean {
-  if (studyRoom) return false
-  if (!roomId || roomId === 'demo') return true
-  return !isSupabaseConfigured || isDemoMode
 }
 
 const safeIdleTimerState = (): RoomTimerState & { isIdle: boolean } => ({
@@ -91,21 +78,11 @@ export function useGlobalRoomTimer(
   roomId: string | undefined,
   studyRoom: StudyRoom | null | undefined,
 ) {
-  const id = roomId ?? 'demo'
+  const id = roomId ?? ''
   const adapter = getHubRoomsAdapter()
 
-  const useMock = shouldUseMockTimer(roomId, studyRoom)
-  const useServerClock = Boolean(studyRoom && roomId && !useMock)
+  const useServerClock = Boolean(studyRoom && roomId)
   const serverOffsetMs = useServerClockOffset(useServerClock)
-
-  const [mockState, setMockState] = useState<RoomTimerState>(() =>
-    getMockRoomTimerState(roomId),
-  )
-
-  useEffect(() => {
-    if (studyRoom || !useMock) return
-    setMockState(getMockRoomTimerState(roomId))
-  }, [roomId, studyRoom, useMock])
 
   const [localNow, setLocalNow] = useState(() => Date.now())
 
@@ -124,11 +101,8 @@ export function useGlobalRoomTimer(
 
   const derived = useMemo(() => {
     if (studyRoom) return studyRoomToTimerState(studyRoom, now)
-    if (useMock) {
-      return { ...mockState, isIdle: false, cycle: DEFAULT_CYCLE_CONFIG }
-    }
     return safeIdleTimerState()
-  }, [studyRoom, mockState, useMock, now])
+  }, [studyRoom, now])
 
   const config: RoomCycleConfig = derived.cycle ?? DEFAULT_CYCLE_CONFIG
   const isIdle = derived.isIdle
@@ -161,11 +135,7 @@ export function useGlobalRoomTimer(
   const advancePhase = useCallback(async () => {
     if (studyRoom && roomId) {
       await adapter.advanceTimerPhase(roomId, now)
-      return
     }
-    setMockState((prev) =>
-      buildAdvancedState(prev, new Date(now), prev.cycle ?? DEFAULT_CYCLE_CONFIG),
-    )
   }, [studyRoom, roomId, adapter, now])
 
   const syncTimerCatchUp = useCallback(async () => {
@@ -174,13 +144,7 @@ export function useGlobalRoomTimer(
   }, [studyRoom, roomId, adapter, now])
 
   useEffect(() => {
-    if (!studyRoom && !useMock) return
-    if (useMock) {
-      if (isIdle || !isComplete) return
-      if (!tryClaimLeader(id)) return
-      void advancePhase()
-      return
-    }
+    if (!studyRoom) return
     if (!catchUp.changed && !isComplete) return
     if (!tryClaimLeader(id)) return
     void syncTimerCatchUp()
@@ -189,13 +153,11 @@ export function useGlobalRoomTimer(
     isComplete,
     isIdle,
     id,
-    advancePhase,
     syncTimerCatchUp,
     studyRoom,
-    useMock,
   ])
 
-  const presentCount = derived.presentCount ?? mockState.presentCount ?? 128
+  const presentCount = derived.presentCount ?? 0
 
   const cycleCount =
     catchUp.resolved?.cycle_count ??

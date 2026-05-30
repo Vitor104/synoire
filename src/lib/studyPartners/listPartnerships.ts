@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode, listDemoPartnerships } from './demo'
 import { mapPartnershipsQueryError } from './errors'
 import { mapPartnershipRows } from './mapPartnershipRow'
 import type { MappedPartnership, PartnershipRow, PartnershipsResult } from './types'
@@ -7,10 +6,6 @@ import type { MappedPartnership, PartnershipRow, PartnershipsResult } from './ty
 export async function listPartnerships(
   userId: string,
 ): Promise<PartnershipsResult<MappedPartnership[]>> {
-  if (isDemoMode) {
-    return { ok: true, data: listDemoPartnerships(userId) }
-  }
-
   if (!isSupabaseConfigured) {
     return { ok: false, message: 'Supabase não configurado.' }
   }

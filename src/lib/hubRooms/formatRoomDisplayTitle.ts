@@ -1,5 +1,3 @@
-import { SAMPLE_HUBS } from '@/data/sampleHubs'
-
 export type RoomDisplayTitleState =
   | 'loading'
   | 'ready'
@@ -12,7 +10,7 @@ export type RoomDisplayTitleState =
 export function formatRoomDisplayTitle(
   state: RoomDisplayTitleState,
   studyName?: string | null,
-  roomId?: string,
+  _roomId?: string,
 ): string {
   if (studyName?.trim()) return studyName.trim()
 
@@ -29,13 +27,6 @@ export function formatRoomDisplayTitle(
     case 'ready':
       return 'Sala de estudo'
     default:
-      break
+      return 'Sala de estudo'
   }
-
-  if (!roomId) return 'Sala de estudo'
-  const hub = SAMPLE_HUBS.find((h) => h.slug === roomId)
-  if (hub) return `Sala ${hub.name}`
-  if (roomId === 'demo') return 'Sala de estudo'
-
-  return 'Sala de estudo'
 }

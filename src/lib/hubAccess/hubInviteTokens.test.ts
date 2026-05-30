@@ -13,16 +13,9 @@ import { clearJoinedHubsForTests } from '@/lib/joinedHubs/storage'
 
 const mocks = vi.hoisted(() => ({
   state: {
-    demoMode: true,
     supabaseConfigured: false,
   },
   rpc: vi.fn(),
-}))
-
-vi.mock('@/lib/hubRooms/demo', () => ({
-  get isDemoMode() {
-    return mocks.state.demoMode
-  },
 }))
 
 vi.mock('@/lib/supabase', () => ({
@@ -37,9 +30,8 @@ vi.mock('@/lib/supabase', () => ({
       : null,
 }))
 
-describe('hubInviteTokens demo', () => {
+describe('hubInviteTokens local storage', () => {
   beforeEach(() => {
-    mocks.state.demoMode = true
     mocks.state.supabaseConfigured = false
     mocks.rpc.mockReset()
     clearHubAccessForTests()
@@ -64,7 +56,6 @@ describe('hubInviteTokens demo', () => {
 
 describe('hubInviteTokens supabase', () => {
   beforeEach(() => {
-    mocks.state.demoMode = false
     mocks.state.supabaseConfigured = true
     mocks.rpc.mockReset()
     clearHubAccessForTests()

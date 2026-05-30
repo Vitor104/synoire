@@ -1,8 +1,6 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode } from '@/lib/studySessions/demo'
 import { mapStudySessionRow } from '@/lib/studySessions/mapStudySessionRow'
 import type { StudySessionRow, StudySessionView } from '@/lib/studySessions/types'
-import { recordDemoStudyTime } from './demoStats'
 import type { UserStatsResult } from './types'
 
 function mapRpcError(message: string): string {
@@ -30,17 +28,12 @@ function enqueueRecordStudyTime<T>(task: () => Promise<T>): Promise<T> {
 }
 
 async function invokeRecordStudyTime(
-  userId: string,
+  _userId: string,
   roomId: string,
   durationMinutes: number,
 ): Promise<RecordStudyTimeResult> {
   if (durationMinutes < 1) {
     return { ok: false, message: 'Duração inválida.' }
-  }
-
-  if (isDemoMode) {
-    const { session } = recordDemoStudyTime(userId, { roomId, durationMinutes })
-    return { ok: true, data: { sessionId: session.id } }
   }
 
   if (!isSupabaseConfigured) {
@@ -83,10 +76,6 @@ export async function recordPartialStudyTime(
 export async function fetchStudySessionById(
   sessionId: string,
 ): Promise<UserStatsResult<StudySessionView>> {
-  if (isDemoMode) {
-    return { ok: false, message: 'Demo mode.' }
-  }
-
   const supabase = getSupabase()
   if (!supabase) {
     return { ok: false, message: 'Supabase não configurado.' }

@@ -97,7 +97,7 @@ export function BillingReturnPage() {
       }
 
       setMessage('Pagamento confirmado. Estamos ativando seu Glow...')
-      const activated = await waitForGlowActivation({ clearDevOverride: true })
+      const activated = await waitForGlowActivation()
       if (cancelled) return
       const successMessage =
         activated ?

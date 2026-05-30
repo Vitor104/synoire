@@ -17,7 +17,7 @@ export function RoomChatMessageLine({
   return (
     <article className="flex gap-3" aria-label={`Mensagem de ${username}`}>
       <PartnerAvatar
-        partner={{ displayName: username, avatarUrl }}
+        partner={{ displayName: username, avatarUrl: avatarUrl ?? '' }}
         className="h-10 w-10 shrink-0"
       />
       <div className="min-w-0 flex-1">

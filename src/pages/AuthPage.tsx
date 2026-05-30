@@ -24,8 +24,6 @@ import {
 } from '@/motion/pageStagger'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 
-const demoMode = import.meta.env.VITE_DEMO_MODE === 'true'
-
 type AuthMode = 'login' | 'signup'
 
 const inputClass =
@@ -77,10 +75,6 @@ export function AuthPage() {
     if (!oauthMessage) return
     setError(oauthMessage)
   }, [])
-
-  const goToPainel = () => {
-    navigate(postAuthPath)
-  }
 
   const switchMode = (next: AuthMode) => {
     setMode(next)
@@ -175,9 +169,7 @@ export function AuthPage() {
         {mode === 'login' ? 'Entrar' : 'Criar conta'}
       </motion.h1>
       <motion.p variants={item} className="mt-2 text-sm text-secondary">
-        {demoMode
-          ? 'Modo demo disponível abaixo. Com Supabase configurado, use o formulário para auth real.'
-          : 'Acesse sua conta ou cadastre-se para estudar com a comunidade.'}
+        Acesse sua conta ou cadastre-se para estudar com a comunidade.
       </motion.p>
 
       <motion.div
@@ -214,7 +206,7 @@ export function AuthPage() {
         </button>
       </motion.div>
 
-      {!demoMode && !supabaseReady && (
+      {!supabaseReady && (
         <motion.p
           variants={item}
           className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
@@ -337,22 +329,6 @@ export function AuthPage() {
         </Link>
         .
       </motion.p>
-
-      {demoMode && (
-        <motion.div variants={item} className="mt-6 space-y-3 border-t border-border pt-6">
-          <p className="text-xs text-secondary">
-            Modo demo: nenhuma conta é criada. Rotas protegidas exigem login real quando o
-            Supabase estiver configurado.
-          </p>
-          <button
-            type="button"
-            onClick={goToPainel}
-            className="w-full cursor-pointer rounded-xl border border-border bg-surface px-4 py-3 text-left text-sm text-primary transition hover:bg-elevated"
-          >
-            Ir ao painel sem conta (demo)
-          </button>
-        </motion.div>
-      )}
 
       <motion.div variants={item}>
         <Link

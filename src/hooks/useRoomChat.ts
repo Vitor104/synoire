@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { isDemoMode } from '@/lib/hubRooms/demo'
 import {
   appendMessageIfNew,
   DEMO_USER_ID,
@@ -19,7 +18,7 @@ type UseRoomChatOptions = {
   enabled?: boolean
 }
 
-const usesSupabaseChat = isSupabaseConfigured && !isDemoMode
+const usesSupabaseChat = isSupabaseConfigured
 
 export function useRoomChat({
   roomId,

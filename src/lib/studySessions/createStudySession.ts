@@ -1,9 +1,7 @@
-import { recordDemoStudyTime } from '@/lib/userStats/demoStats'
 import {
   fetchStudySessionById,
   recordPartialStudyTime,
 } from '@/lib/userStats/recordPartialStudyTime'
-import { isDemoMode } from './demo'
 import { mapStudySessionsCreateError } from './errors'
 import type { CreateStudySessionInput, StudySessionView, StudySessionsResult } from './types'
 
@@ -11,11 +9,6 @@ export async function createStudySession(
   userId: string,
   input: CreateStudySessionInput,
 ): Promise<StudySessionsResult<StudySessionView>> {
-  if (isDemoMode) {
-    const { session } = recordDemoStudyTime(userId, input)
-    return { ok: true, data: session }
-  }
-
   const recorded = await recordPartialStudyTime(
     userId,
     input.roomId,

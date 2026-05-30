@@ -1,6 +1,5 @@
 import { isAccessGrantActive } from '@/lib/accessInvites/constants'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode } from '@/lib/hubRooms/demo'
 import { isForbiddenError, mapRoomQueryError } from '@/lib/hubRooms/errors'
 import { isRoomInviteAcknowledged } from './inviteAcknowledgment'
 import { listGrantsForUser } from './storage'
@@ -131,7 +130,7 @@ function listIncomingRoomInvitesLocal(userId: string): IncomingRoomInvite[] {
 export async function listIncomingRoomInvites(
   userId: string,
 ): Promise<RoomAccessResult<IncomingRoomInvite[]>> {
-  if (isDemoMode || !isSupabaseConfigured) {
+  if (!isSupabaseConfigured) {
     return { ok: true, data: listIncomingRoomInvitesLocal(userId) }
   }
   return listIncomingRoomInvitesSupabase(userId)

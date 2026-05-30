@@ -21,11 +21,7 @@ vi.mock('@/lib/supabase', () => ({
   }),
 }))
 
-vi.mock('@/lib/hubs/demo', () => ({
-  isDemoMode: false,
-}))
-
-describe('hubAccess storage (demo)', () => {
+describe('hubAccess storage (local)', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-05-27T12:00:00.000Z'))

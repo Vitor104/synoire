@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { createDemoUserGoal, isDemoMode } from './demo'
 import {
   isForbiddenGoalsError,
   mapGoalsCreateError,
@@ -11,10 +10,6 @@ export async function createUserGoal(
   userId: string,
   input: CreateUserGoalInput,
 ): Promise<GoalsResult<UserGoalView>> {
-  if (isDemoMode) {
-    return { ok: true, data: createDemoUserGoal(userId, input) }
-  }
-
   if (!isSupabaseConfigured) {
     return { ok: false, message: 'Supabase não configurado.' }
   }

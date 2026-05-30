@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { getDemoHubBySlug, isDemoMode } from './demo'
 import { mapHubQueryError } from './errors'
 import { mapHubRow } from './mapHubRow'
 import type { HubRow, HubView, HubsResult } from './types'
@@ -9,10 +8,6 @@ export async function getHubBySlug(
 ): Promise<HubsResult<HubView | null>> {
   if (!slug.trim()) {
     return { ok: true, data: null }
-  }
-
-  if (isDemoMode) {
-    return { ok: true, data: getDemoHubBySlug(slug) ?? null }
   }
 
   if (!isSupabaseConfigured) {

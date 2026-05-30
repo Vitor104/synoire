@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode, listDemoStudySessions } from './demo'
 import { mapStudySessionsQueryError } from './errors'
 import { mapStudySessionRow } from './mapStudySessionRow'
 import type { StudySessionRow, StudySessionView, StudySessionsResult } from './types'
@@ -7,10 +6,6 @@ import type { StudySessionRow, StudySessionView, StudySessionsResult } from './t
 export async function listUserStudySessions(
   userId: string,
 ): Promise<StudySessionsResult<StudySessionView[]>> {
-  if (isDemoMode) {
-    return { ok: true, data: listDemoStudySessions(userId) }
-  }
-
   if (!isSupabaseConfigured) {
     return { ok: false, message: 'Supabase não configurado.' }
   }

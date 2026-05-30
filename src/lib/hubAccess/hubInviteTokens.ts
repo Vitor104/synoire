@@ -1,5 +1,3 @@
-import { isDemoMode } from '@/lib/hubRooms/demo'
-import { getDemoHubBySlug } from '@/lib/hubs/demo'
 import { mapHubRow } from '@/lib/hubs/mapHubRow'
 import type { HubRow, HubView } from '@/lib/hubs/types'
 import { isHubJoined, readJoinedHubSlugs, writeJoinedHubSlugs } from '@/lib/joinedHubs'
@@ -30,7 +28,7 @@ export async function getOrCreateHubInviteToken(
     return { ok: false, message: 'Hub inválido.' }
   }
 
-  if (isDemoMode || !isSupabaseConfigured) {
+  if (!isSupabaseConfigured) {
     return {
       ok: true,
       data: getOrCreateHubInviteTokenLocal(hubId, hubId),
@@ -71,7 +69,7 @@ export async function redeemHubInviteToken(
     return { ok: true, data: false }
   }
 
-  if (isDemoMode || !isSupabaseConfigured) {
+  if (!isSupabaseConfigured) {
     const valid = redeemHubInviteTokenLocal(hubId, token)
     if (!valid) return { ok: true, data: false }
 
@@ -124,21 +122,13 @@ export async function resolveHubInviteTarget(
     return { ok: true, data: null }
   }
 
-  if (isDemoMode || !isSupabaseConfigured) {
-    const hub = getDemoHubBySlug(normalizedSlug) ?? null
-    if (!hub || !redeemHubInviteTokenLocal(hub.id, normalizedToken)) {
-      return { ok: true, data: null }
-    }
-    return { ok: true, data: hub }
+  if (!isSupabaseConfigured) {
+    return { ok: true, data: null }
   }
 
   const supabase = getSupabase()
   if (!supabase) {
-    const hub = getDemoHubBySlug(normalizedSlug) ?? null
-    if (!hub || !redeemHubInviteTokenLocal(hub.id, normalizedToken)) {
-      return { ok: true, data: null }
-    }
-    return { ok: true, data: hub }
+    return { ok: true, data: null }
   }
 
   const { data, error } = await supabase.rpc('resolve_hub_invite_target', {

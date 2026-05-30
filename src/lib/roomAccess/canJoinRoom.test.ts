@@ -2,13 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   getRoomByIdMock,
-  getRoomMock,
   grantMaybeSingleMock,
   creatorMaybeSingleMock,
   fromMock,
 } = vi.hoisted(() => ({
   getRoomByIdMock: vi.fn(),
-  getRoomMock: vi.fn(),
   grantMaybeSingleMock: vi.fn(),
   creatorMaybeSingleMock: vi.fn(),
   fromMock: vi.fn(),
@@ -18,21 +16,11 @@ vi.mock('@/lib/hubRooms/getRoomById', () => ({
   getRoomById: getRoomByIdMock,
 }))
 
-vi.mock('@/lib/hubRooms/demo', () => ({
-  isDemoMode: false,
-}))
-
 vi.mock('@/lib/supabase', () => ({
   isSupabaseConfigured: true,
   getSupabase: () => ({
     from: fromMock,
   }),
-}))
-
-vi.mock('@/lib/hubRooms/mockHubRoomsAdapter', () => ({
-  mockHubRoomsAdapter: {
-    getRoom: getRoomMock,
-  },
 }))
 
 import { canJoinRoom } from './canJoinRoom'
@@ -58,7 +46,6 @@ const baseRoom = {
 describe('canJoinRoom', () => {
   beforeEach(() => {
     getRoomByIdMock.mockReset()
-    getRoomMock.mockReset()
     fromMock.mockReset()
     grantMaybeSingleMock.mockReset()
     creatorMaybeSingleMock.mockReset()

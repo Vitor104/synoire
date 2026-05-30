@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { mockRoomChatAdapter } from './mockRoomChatAdapter'
 import {
   appendMessageIfNew,
   canSendRoomChat,
@@ -78,17 +77,5 @@ describe('isValidChatContent', () => {
     expect(isValidChatContent('  oi  ')).toBe(true)
     expect(isValidChatContent('x'.repeat(500))).toBe(true)
     expect(isValidChatContent('x'.repeat(501))).toBe(false)
-  })
-})
-
-describe('mockRoomChatAdapter', () => {
-  it('fetchRecent returns seeded demo messages', async () => {
-    const roomId = `test-demo-${Date.now()}`
-    const msgs = await mockRoomChatAdapter.fetchRecent(roomId)
-    expect(msgs.length).toBe(0)
-
-    await mockRoomChatAdapter.send(roomId, 'test message', 'demo-local-user')
-    const after = await mockRoomChatAdapter.fetchRecent(roomId)
-    expect(after.some((m) => m.content === 'test message')).toBe(true)
   })
 })

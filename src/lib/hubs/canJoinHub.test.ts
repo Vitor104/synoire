@@ -6,7 +6,6 @@ vi.mock('./getHubBySlug', () => ({
   getHubBySlug: vi.fn(),
 }))
 
-vi.mock('@/lib/hubRooms/demo', () => ({ isDemoMode: false }))
 vi.mock('@/lib/supabase', () => ({
   isSupabaseConfigured: false,
   getSupabase: () => null,

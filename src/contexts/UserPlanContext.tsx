@@ -8,11 +8,6 @@ import {
   type ReactNode,
 } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import {
-  clearDevPlanTier,
-  readDevPlanTier,
-  writeDevPlanTier,
-} from '@/lib/plan/devStorage'
 import { hasGlowAccess, isPlanTier, type PlanTier } from '@/lib/plan/types'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 
@@ -23,10 +18,8 @@ type UserPlanContextValue = {
   planTier: PlanTier
   isLoading: boolean
   hasGlowAccess: boolean
-  setPlanTier: (tier: PlanTier) => void
-  refreshPlanTier: (options?: { clearDevOverride?: boolean }) => Promise<void>
+  refreshPlanTier: () => Promise<void>
   waitForGlowActivation: (options?: {
-    clearDevOverride?: boolean
     maxAttempts?: number
     intervalMs?: number
   }) => Promise<boolean>
@@ -61,43 +54,22 @@ async function fetchPlanTierFromDb(): Promise<PlanTier> {
 
 export function UserPlanProvider({ children }: { children: ReactNode }) {
   const { user, isLoading: authLoading, isSessionReady } = useAuth()
-  const [planTier, setPlanTierState] = useState<PlanTier>(() => readDevPlanTier() ?? 'free')
+  const [planTier, setPlanTierState] = useState<PlanTier>('free')
   const [isLoading, setIsLoading] = useState(true)
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [paywallMessage, setPaywallMessage] = useState<string | null>(null)
 
-  const refreshPlanTier = useCallback(
-    async (options?: { clearDevOverride?: boolean }) => {
-      if (options?.clearDevOverride) {
-        clearDevPlanTier()
-      }
-
-      const devOverride = readDevPlanTier()
-      if (devOverride && !options?.clearDevOverride) {
-        setPlanTierState(devOverride)
-        return
-      }
-
-      try {
-        const tier = await fetchPlanTierFromDb()
-        setPlanTierState(tier)
-      } catch {
-        setPlanTierState('free')
-      }
-    },
-    [],
-  )
+  const refreshPlanTier = useCallback(async () => {
+    try {
+      const tier = await fetchPlanTierFromDb()
+      setPlanTierState(tier)
+    } catch {
+      setPlanTierState('free')
+    }
+  }, [])
 
   const waitForGlowActivation = useCallback(
-    async (options?: {
-      clearDevOverride?: boolean
-      maxAttempts?: number
-      intervalMs?: number
-    }) => {
-      if (options?.clearDevOverride) {
-        clearDevPlanTier()
-      }
-
+    async (options?: { maxAttempts?: number; intervalMs?: number }) => {
       const maxAttempts = options?.maxAttempts ?? GLOW_ACTIVATION_POLL_ATTEMPTS
       const intervalMs = options?.intervalMs ?? GLOW_ACTIVATION_POLL_INTERVAL_MS
 
@@ -124,15 +96,6 @@ export function UserPlanProvider({ children }: { children: ReactNode }) {
     let cancelled = false
 
     async function loadPlanTier() {
-      const devOverride = readDevPlanTier()
-      if (devOverride) {
-        if (!cancelled) {
-          setPlanTierState(devOverride)
-          setIsLoading(false)
-        }
-        return
-      }
-
       if (!isSessionReady) {
         if (!cancelled) setIsLoading(authLoading)
         return
@@ -155,11 +118,6 @@ export function UserPlanProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id, isSessionReady, authLoading])
 
-  const setPlanTier = useCallback((tier: PlanTier) => {
-    setPlanTierState(tier)
-    writeDevPlanTier(tier)
-  }, [])
-
   const openPaywall = useCallback((message?: string) => {
     setPaywallMessage(message ?? null)
     setPaywallOpen(true)
@@ -174,7 +132,6 @@ export function UserPlanProvider({ children }: { children: ReactNode }) {
       planTier,
       isLoading,
       hasGlowAccess: hasGlowAccess(planTier),
-      setPlanTier,
       refreshPlanTier,
       waitForGlowActivation,
       paywallOpen,
@@ -185,7 +142,6 @@ export function UserPlanProvider({ children }: { children: ReactNode }) {
     [
       planTier,
       isLoading,
-      setPlanTier,
       refreshPlanTier,
       waitForGlowActivation,
       paywallOpen,

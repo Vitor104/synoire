@@ -37,10 +37,6 @@ vi.mock('@/lib/supabase', () => ({
   }),
 }))
 
-vi.mock('@/lib/studyPartners/demo', () => ({
-  isDemoMode: false,
-}))
-
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
     user: { id: 'user-1' },
@@ -171,9 +167,10 @@ describe('GlobalPresenceProvider', () => {
       </GlobalPresenceProvider>,
     )
 
-    expect(api?.presenceSynced).toBe(false)
+    await waitFor(() => expect(api).not.toBeNull())
+    expect(api!.presenceSynced).toBe(false)
     await waitFor(() => expect(subscribeCallback).not.toBeNull())
     await subscribeCallback!('SUBSCRIBED')
-    await waitFor(() => expect(api?.presenceSynced).toBe(true))
+    await waitFor(() => expect(api!.presenceSynced).toBe(true))
   })
 })

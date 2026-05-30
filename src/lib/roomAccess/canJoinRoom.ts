@@ -1,14 +1,12 @@
-import { isDemoMode } from '@/lib/hubRooms/demo'
 import { getRoomById } from '@/lib/hubRooms/getRoomById'
-import { mockHubRoomsAdapter } from '@/lib/hubRooms/mockHubRoomsAdapter'
 import type { StudyRoom } from '@/lib/hubRooms/types'
 import { isAccessGrantActive } from '@/lib/accessInvites/constants'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { hasRoomAccess as hasLocalAccess } from './storage'
 
 async function fetchRoom(roomId: string): Promise<StudyRoom | null> {
-  if (!isSupabaseConfigured || isDemoMode) {
-    return mockHubRoomsAdapter.getRoom(roomId)
+  if (!isSupabaseConfigured) {
+    return null
   }
   const result = await getRoomById(roomId)
   if (!result.ok) {
@@ -61,15 +59,13 @@ function userIsRoomCreator(room: StudyRoom, userId: string): boolean {
 }
 
 async function fetchRoomCreatorId(roomId: string): Promise<string | null> {
-  if (!isSupabaseConfigured || isDemoMode) {
-    const room = await mockHubRoomsAdapter.getRoom(roomId)
-    return room?.creator_id ?? null
+  if (!isSupabaseConfigured) {
+    return null
   }
 
   const supabase = getSupabase()
   if (!supabase) {
-    const room = await mockHubRoomsAdapter.getRoom(roomId)
-    return room?.creator_id ?? null
+    return null
   }
 
   const { data, error } = await supabase

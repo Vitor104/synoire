@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { getDemoJoinedHubs, isDemoMode } from './demo'
 import { mapHubQueryError } from './errors'
 import { mapHubRow } from './mapHubRow'
 import type { HubRow, HubView, HubsResult, UserHubRow } from './types'
@@ -14,10 +13,6 @@ function extractHubFromUserHubRow(row: UserHubRow): HubRow | null {
 export async function listUserHubs(
   userId: string,
 ): Promise<HubsResult<HubView[]>> {
-  if (isDemoMode) {
-    return { ok: true, data: getDemoJoinedHubs() }
-  }
-
   if (!isSupabaseConfigured) {
     return { ok: false, message: 'Supabase não configurado.' }
   }

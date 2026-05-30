@@ -30,17 +30,17 @@ vi.mock('@/hooks/usePrefersReducedMotion', () => ({
 
 vi.mock('@/lib/hubs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/hubs')>()
-  const { SAMPLE_HUBS } = await import('@/data/sampleHubs')
+  const { TEST_HUBS } = await import('@/test/fixtures/hubs')
   return {
     ...actual,
-    listHubs: vi.fn(async () => ({ ok: true as const, data: SAMPLE_HUBS })),
+    listHubs: vi.fn(async () => ({ ok: true as const, data: TEST_HUBS })),
     getHubBySlug: vi.fn(async () => ({ ok: true as const, data: null })),
     listUserHubs: vi.fn(async () => ({ ok: true as const, data: [] })),
     joinUserHub: vi.fn(async () => ({ ok: true as const, data: undefined })),
     leaveUserHub: vi.fn(async () => ({ ok: true as const, data: undefined })),
     createPrivateHub: vi.fn(async () => ({
       ok: true as const,
-      data: SAMPLE_HUBS[0],
+      data: TEST_HUBS[0],
     })),
   }
 })

@@ -16,7 +16,6 @@ import {
   applyPartnershipRealtimeEvent,
   buildPartnerLists,
   fetchPartnerEnrichment,
-  isDemoMode,
   listPartnerships,
   sendPartnerInvite as sendPartnerInviteLib,
   subscribePartnershipsRealtime,
@@ -129,7 +128,7 @@ export function StudyPartnersProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const userId = user?.id
-    if (!userId || !isSessionReady || isDemoMode || !isSupabaseConfigured) return
+    if (!userId || !isSessionReady || !isSupabaseConfigured) return
 
     return subscribePartnershipsRealtime(userId, (event) => {
       let sideEffect: ApplyPartnershipRealtimeResult | null = null

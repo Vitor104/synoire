@@ -10,8 +10,6 @@ import {
   pageStaggerItem,
 } from '@/motion/pageStagger'
 
-const GOD_KEY = 'GOD_KEY_TO_PREMIUM_ACTIVATE'
-
 const DEFAULT_PAYWALL_MESSAGE =
   'Saia do plano Free e destrave a camada premium do Synoire com uma assinatura mensal.'
 
@@ -79,7 +77,7 @@ function FeatureList({
 }
 
 export function GlowPaywallModal() {
-  const { paywallOpen, paywallMessage, closePaywall, setPlanTier } = useUserPlan()
+  const { paywallOpen, paywallMessage, closePaywall } = useUserPlan()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const prefersReducedMotion = usePrefersReducedMotion()
   const staggerC = pageStaggerContainer(prefersReducedMotion)
@@ -88,27 +86,6 @@ export function GlowPaywallModal() {
   useEffect(() => {
     if (paywallOpen) void getStripe()
   }, [paywallOpen])
-
-  const tryActivateGodKey = useCallback(() => {
-    const key = prompt('Enter God Key:')
-    if (key === null) return false
-    if (key === GOD_KEY) {
-      setPlanTier('glow')
-      closePaywall()
-      alert('✨ MODO GLOW ATIVADO COM SUCESSO (SIMULADO)!')
-      return true
-    }
-    alert('Chave invalida. Tente novamente ou use "Talvez depois".')
-    return false
-  }, [setPlanTier, closePaywall])
-
-  const handleTitleGodKey = useCallback(
-    (e: React.MouseEvent) => {
-      if (!e.shiftKey) return
-      tryActivateGodKey()
-    },
-    [tryActivateGodKey],
-  )
 
   const handleUpgrade = useCallback(async () => {
     if (isCheckingOut) return
@@ -180,8 +157,7 @@ export function GlowPaywallModal() {
                   <motion.h2
                     id="glow-paywall-title"
                     variants={staggerItem}
-                    className="cursor-default text-2xl font-semibold leading-tight text-primary sm:text-3xl"
-                    onDoubleClick={handleTitleGodKey}
+                    className="text-2xl font-semibold leading-tight text-primary sm:text-3xl"
                   >
                     Eleve seu foco com o Synoire Glow.
                   </motion.h2>

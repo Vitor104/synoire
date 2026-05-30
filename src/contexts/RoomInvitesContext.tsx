@@ -9,7 +9,6 @@ import {
 } from 'react'
 import { AppToast } from '@/components/ui/AppToast'
 import { useAuth } from '@/contexts/AuthContext'
-import { isDemoMode } from '@/lib/hubRooms/demo'
 import {
   acceptRoomAccess,
   acknowledgeRoomInvite,
@@ -101,7 +100,7 @@ export function RoomInvitesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user?.id || !isSessionReady) return
-    if (isSupabaseConfigured && !isDemoMode) return
+    if (isSupabaseConfigured) return
     return subscribeRoomAccessStorageSync(() => {
       void refresh()
     })

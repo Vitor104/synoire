@@ -5,10 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StudyRoom } from '@/lib/hubRooms/types'
 import { useRoomEntry } from './useRoomEntry'
 
-const getRoomMock = vi.fn()
-const syncTimerCatchUpMock = vi.fn()
+const refreshRoomMock = vi.fn()
 const canJoinRoomMock = vi.fn()
 const redeemRoomInviteTokenMock = vi.fn()
+
+let studyRoomState: {
+  room: StudyRoom | null
+  loading: boolean
+}
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
@@ -16,18 +20,12 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }))
 
-vi.mock('@/hooks/useRoomPresence', () => ({
-  useRoomPresence: () => ({
+vi.mock('@/hooks/useStudyRoom', () => ({
+  useStudyRoom: () => ({
+    room: studyRoomState.room,
+    loading: studyRoomState.loading,
     presentCount: 0,
-    emptySince: null,
-  }),
-}))
-
-vi.mock('@/lib/hubRooms', () => ({
-  getHubRoomsAdapter: () => ({
-    getRoom: (...args: unknown[]) => getRoomMock(...args),
-    syncTimerCatchUp: (...args: unknown[]) => syncTimerCatchUpMock(...args),
-    subscribe: () => () => {},
+    refreshRoom: refreshRoomMock,
   }),
 }))
 
@@ -65,36 +63,41 @@ const privateRoom: StudyRoom = {
 
 describe('useRoomEntry invite links', () => {
   beforeEach(() => {
-    getRoomMock.mockReset()
-    syncTimerCatchUpMock.mockReset()
+    refreshRoomMock.mockReset()
     canJoinRoomMock.mockReset()
     redeemRoomInviteTokenMock.mockReset()
-    syncTimerCatchUpMock.mockImplementation(async (_roomId: string) => privateRoom)
+    studyRoomState = { room: null, loading: true }
+    refreshRoomMock.mockImplementation(() => {
+      studyRoomState = { room: privateRoom, loading: false }
+    })
   })
 
   it('reloads the room after redeeming a valid invite', async () => {
-    getRoomMock
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(privateRoom)
     redeemRoomInviteTokenMock.mockResolvedValue({ ok: true, data: true })
     canJoinRoomMock.mockResolvedValue({ status: 'allowed' })
 
-    const { result } = renderHook(() => useRoomEntry('room-1'), {
+    const { result, rerender } = renderHook(() => useRoomEntry('room-1'), {
       wrapper: createWrapper('/salas/room-1?invite=token-123'),
     })
+
+    await waitFor(() => {
+      expect(redeemRoomInviteTokenMock).toHaveBeenCalledWith('room-1', 'token-123', 'guest-1')
+    })
+
+    expect(refreshRoomMock).toHaveBeenCalled()
+    studyRoomState = { room: privateRoom, loading: false }
+    rerender()
 
     await waitFor(() => {
       expect(result.current.entryStatus).toBe('ready')
     })
 
-    expect(redeemRoomInviteTokenMock).toHaveBeenCalledWith('room-1', 'token-123', 'guest-1')
     expect(canJoinRoomMock).toHaveBeenCalledWith('room-1', 'guest-1')
-    expect(getRoomMock).toHaveBeenCalledTimes(2)
     expect(result.current.room?.id).toBe('room-1')
   })
 
   it('returns invalid_invite when the token cannot be redeemed', async () => {
-    getRoomMock.mockResolvedValue(null)
+    studyRoomState = { room: null, loading: false }
     redeemRoomInviteTokenMock.mockResolvedValue({ ok: true, data: false })
     canJoinRoomMock.mockResolvedValue({ status: 'denied_private' })
 

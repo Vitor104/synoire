@@ -1,7 +1,5 @@
-import { isDemoMode } from '@/lib/hubRooms/demo'
 import { isAccessGrantActive } from '@/lib/accessInvites/constants'
 import { listGrantsForHub } from '@/lib/hubAccess/storage'
-import { isHubJoined, readJoinedHubSlugs } from '@/lib/joinedHubs'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { getHubBySlug } from './getHubBySlug'
 import type { HubView } from './types'
@@ -19,10 +17,6 @@ export type CanJoinHubResult =
   | { status: 'error'; message: string }
 
 async function userIsHubMember(hubId: string, userId: string): Promise<boolean> {
-  if (isDemoMode) {
-    return false
-  }
-
   if (!isSupabaseConfigured) return false
 
   const supabase = getSupabase()
@@ -44,7 +38,7 @@ async function userIsHubMember(hubId: string, userId: string): Promise<boolean> 
 }
 
 async function userHasHubAccessGrant(hubId: string, userId: string): Promise<boolean> {
-  if (!isSupabaseConfigured || isDemoMode) {
+  if (!isSupabaseConfigured) {
     const grant = listGrantsForHub(hubId).find((g) => g.userId === userId)
     return grant ? isAccessGrantActive(grant.grantedAt) : false
   }
@@ -75,12 +69,6 @@ function userIsHubCreator(hub: HubView, userId: string): boolean {
   return Boolean(hub.creatorId && hub.creatorId === userId)
 }
 
-function userJoinedHubInDemo(slug: string, userId: string): boolean {
-  if (!isDemoMode) return false
-  void userId
-  return isHubJoined(slug, readJoinedHubSlugs())
-}
-
 export async function canJoinHub(
   slug: string,
   userId: string,
@@ -104,10 +92,6 @@ export async function canJoinHub(
   }
 
   if (userIsHubCreator(hub, userId)) {
-    return { status: 'allowed' }
-  }
-
-  if (userJoinedHubInDemo(slug, userId)) {
     return { status: 'allowed' }
   }
 

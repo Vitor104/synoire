@@ -1,7 +1,7 @@
 import { getHubBySlug } from '@/lib/hubs'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { createRoomApi } from './createRoom'
-import { mockHubRoomsAdapter } from './mockHubRoomsAdapter'
+import { unconfiguredHubRoomsAdapter } from './unconfiguredHubRoomsAdapter'
 import { getRoomById } from './getRoomById'
 import { listRoomsByHub } from './listRoomsByHub'
 import { HubRoomError } from './HubRoomError'
@@ -132,9 +132,8 @@ export const supabaseHubRoomsAdapter: HubRoomsAdapter = {
 }
 
 export function getHubRoomsAdapter(): HubRoomsAdapter {
-  const demoMode = import.meta.env.VITE_DEMO_MODE === 'true'
-  if (isSupabaseConfigured && !demoMode) {
+  if (isSupabaseConfigured) {
     return supabaseHubRoomsAdapter
   }
-  return mockHubRoomsAdapter
+  return unconfiguredHubRoomsAdapter
 }

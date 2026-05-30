@@ -1,6 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { appendPrivateHub, buildPrivateHub } from '@/lib/privateHubs'
-import { getDemoHubs, isDemoMode } from './demo'
 import { isForbiddenError, mapHubQueryError } from './errors'
 import { mapHubRow } from './mapHubRow'
 import { buildUniqueHubSlug } from './slugify'
@@ -18,17 +16,6 @@ export async function createPrivateHub(
 ): Promise<HubsResult<HubView>> {
   const name = input.name.trim()
   const existingSlugs = input.existingSlugs ?? []
-
-  if (isDemoMode) {
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    const hub = buildPrivateHub(name, input.iconEmoji, existingSlugs, input.creatorId)
-    appendPrivateHub(hub)
-    const demo = getDemoHubs().find((h) => h.slug === hub.slug)
-    return {
-      ok: true,
-      data: demo ?? { ...hub, id: `demo-private-${hub.slug}` },
-    }
-  }
 
   if (!isSupabaseConfigured) {
     return { ok: false, message: 'Supabase não configurado.' }

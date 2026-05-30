@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { setStoredEmptySince, getStoredEmptySince } from '@/lib/hubRooms/emptySinceStorage'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode } from '@/lib/hubRooms/demo'
-
 function countPresenceKeys(state: Record<string, unknown[]>): number {
   return Object.keys(state).length
 }
@@ -27,10 +25,9 @@ export function useRoomPresence(roomId: string | undefined): RoomPresenceState {
       return
     }
 
-    const demoMode = isDemoMode || !isSupabaseConfigured
-    if (demoMode) {
-      setPresentCount(1)
-      setEmptySince(null)
+    if (!isSupabaseConfigured) {
+      setPresentCount(0)
+      setEmptySince(roomId ? getStoredEmptySince(roomId) : null)
       return
     }
 
@@ -104,13 +101,12 @@ export function useRoomsPresenceMap(
       return
     }
 
-    const demoMode = isDemoMode || !isSupabaseConfigured
-    if (demoMode) {
-      const demoMap: Record<string, RoomPresenceState> = {}
+    if (!isSupabaseConfigured) {
+      const emptyMap: Record<string, RoomPresenceState> = {}
       for (const id of roomIds) {
-        demoMap[id] = { presentCount: 0, emptySince: getStoredEmptySince(id) }
+        emptyMap[id] = { presentCount: 0, emptySince: getStoredEmptySince(id) }
       }
-      setMap(demoMap)
+      setMap(emptyMap)
       return
     }
 

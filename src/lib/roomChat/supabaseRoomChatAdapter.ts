@@ -1,5 +1,5 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { mockRoomChatAdapter } from './mockRoomChatAdapter'
+import { unconfiguredRoomChatAdapter } from './unconfiguredRoomChatAdapter'
 import type { RoomChatAdapter, RoomChatMessage } from './types'
 import { ROOM_CHAT_FETCH_LIMIT } from './types'
 
@@ -119,9 +119,8 @@ export const supabaseRoomChatAdapter: RoomChatAdapter = {
 }
 
 export function getRoomChatAdapter(): RoomChatAdapter {
-  const demoMode = import.meta.env.VITE_DEMO_MODE === 'true'
-  if (isSupabaseConfigured && !demoMode) {
+  if (isSupabaseConfigured) {
     return supabaseRoomChatAdapter
   }
-  return mockRoomChatAdapter
+  return unconfiguredRoomChatAdapter
 }

@@ -22,13 +22,6 @@ vi.mock('@/lib/supabase', () => ({
   }),
 }))
 
-vi.mock('./demo', () => ({
-  isDemoMode: false,
-  getDemoHubs: vi.fn(),
-  getDemoHubBySlug: vi.fn(),
-  getDemoJoinedHubs: vi.fn(),
-}))
-
 describe('mapHubRow', () => {
   it('maps public hub with palette', () => {
     const view = mapHubRow({

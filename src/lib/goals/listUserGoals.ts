@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode, listDemoUserGoals } from './demo'
 import { mapGoalsQueryError } from './errors'
 import { mapGoalRow } from './mapGoalRow'
 import type { GoalsResult, UserGoalRow, UserGoalView } from './types'
@@ -7,10 +6,6 @@ import type { GoalsResult, UserGoalRow, UserGoalView } from './types'
 export async function listUserGoals(
   userId: string,
 ): Promise<GoalsResult<UserGoalView[]>> {
-  if (isDemoMode) {
-    return { ok: true, data: listDemoUserGoals(userId) }
-  }
-
   if (!isSupabaseConfigured) {
     return { ok: false, message: 'Supabase não configurado.' }
   }

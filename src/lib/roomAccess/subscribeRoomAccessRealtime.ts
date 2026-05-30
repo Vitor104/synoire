@@ -1,5 +1,4 @@
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
-import { isDemoMode } from '@/lib/hubRooms/demo'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import {
   ROOM_ACCESS_CHANGED_EVENT,
@@ -20,12 +19,12 @@ function payloadToEvent(
     return { type: 'INSERT', row: payload.new }
   }
   if (payload.eventType === 'DELETE' && payload.old) {
+    const room_id = payload.old.room_id
+    const user_id = payload.old.user_id
+    if (!room_id || !user_id) return null
     return {
       type: 'DELETE',
-      row: {
-        room_id: payload.old.room_id,
-        user_id: payload.old.user_id,
-      },
+      row: { room_id, user_id },
     }
   }
   return null
@@ -133,7 +132,7 @@ export function subscribeRoomAccessRealtime(
   userId: string,
   onEvent: RoomAccessRealtimeCallback,
 ): () => void {
-  if (isSupabaseConfigured && !isDemoMode) {
+  if (isSupabaseConfigured) {
     return subscribeRoomAccessSupabase(userId, onEvent)
   }
   return subscribeRoomAccessLocal(userId, onEvent)

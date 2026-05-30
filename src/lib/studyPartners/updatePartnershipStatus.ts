@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode } from './demo'
 import { mapPartnershipsQueryError } from './errors'
 import type { PartnershipDbStatus, PartnershipRow, PartnershipsResult } from './types'
 
@@ -7,10 +6,6 @@ export async function updatePartnershipStatus(
   partnershipId: string,
   status: Extract<PartnershipDbStatus, 'accepted' | 'rejected'>,
 ): Promise<PartnershipsResult<PartnershipRow | null>> {
-  if (isDemoMode) {
-    return { ok: true, data: null }
-  }
-
   if (!isSupabaseConfigured) {
     return { ok: false, message: 'Supabase não configurado.' }
   }

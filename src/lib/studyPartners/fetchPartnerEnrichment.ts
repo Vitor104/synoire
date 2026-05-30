@@ -1,5 +1,4 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
-import { isDemoMode } from './demo'
 import type { PartnerProfileEnrichment } from './types'
 
 export async function fetchPartnerEnrichment(
@@ -9,7 +8,7 @@ export async function fetchPartnerEnrichment(
   const uniqueIds = [...new Set(partnerUserIds.filter(Boolean))]
   if (uniqueIds.length === 0) return map
 
-  if (isDemoMode || !isSupabaseConfigured) return map
+  if (!isSupabaseConfigured) return map
 
   const supabase = getSupabase()
   if (!supabase) return map

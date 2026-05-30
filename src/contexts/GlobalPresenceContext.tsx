@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { isDemoMode } from '@/lib/studyPartners/demo'
 import {
   GLOBAL_PRESENCE_CHANNEL,
   isSamePresencePayload,
@@ -137,7 +136,7 @@ export function GlobalPresenceProvider({ children }: { children: ReactNode }) {
   const updateGlobalPresence = trackPresence
 
   useEffect(() => {
-    if (!user?.id || isDemoMode || !isSupabaseConfigured) {
+    if (!user?.id || !isSupabaseConfigured) {
       setPresenceByUserId(new Map())
       setPresenceSynced(false)
       setPresenceVersion(0)
