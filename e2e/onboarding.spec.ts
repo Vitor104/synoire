@@ -45,7 +45,7 @@ test.describe('onboarding FTU', () => {
     await page.getByRole('link', { name: 'Hubs' }).click()
     await expect(page).toHaveURL(/\/hubs/)
     await expect(
-      page.getByRole('heading', { name: /hubs por concurso/i }),
+      page.getByRole('heading', { name: /hubs de estudo/i }),
     ).toBeVisible({ timeout: 15_000 })
   })
 })

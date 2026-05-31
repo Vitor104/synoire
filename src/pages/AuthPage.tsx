@@ -265,7 +265,7 @@ export function AuthPage() {
                   setError(null)
                 }}
                 className={inputClass}
-                placeholder="concurseiro_ninja"
+                placeholder="estudante_focado"
               />
             </label>
           </>

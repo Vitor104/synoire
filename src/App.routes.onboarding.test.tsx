@@ -80,14 +80,14 @@ describe('rotas com meta semanal pendente', () => {
   it('/hubs permanece em hubs e exibe modal de onboarding', async () => {
     renderAt('/hubs')
     expect(
-      await screen.findByRole('heading', { name: /hubs por concurso/i, hidden: true }),
+      await screen.findByRole('heading', { name: /hubs de estudo/i, hidden: true }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /^painel$/i })).not.toBeInTheDocument()
     expect(
       screen.getByRole('dialog', { name: /qual é o seu objetivo/i }),
     ).toBeInTheDocument()
     expect(
-      await screen.findByRole('button', { name: /não encontrou seu concurso/i, hidden: true }),
+      await screen.findByRole('button', { name: /não encontrou seu hub/i, hidden: true }),
     ).toBeInTheDocument()
   })
 })

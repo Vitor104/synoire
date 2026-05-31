@@ -225,7 +225,7 @@ export function ProfilePage() {
                     Perfil
                   </h1>
                   <p className="mt-1.5 max-w-md text-sm leading-relaxed text-secondary">
-                    Nome público, concurso-alvo e preferências de foco
+                    Nome público, foco de estudo e preferências de foco
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -273,7 +273,7 @@ export function ProfilePage() {
                 )}
               </FieldBlock>
 
-              <FieldBlock label="Concurso-alvo">{examLine}</FieldBlock>
+              <FieldBlock label="Foco de estudo">{examLine}</FieldBlock>
 
               <FieldBlock label="Bio">
                 {bioText ? (

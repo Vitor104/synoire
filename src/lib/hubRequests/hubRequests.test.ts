@@ -6,11 +6,11 @@ describe('validateRequestName', () => {
   it('rejects empty or whitespace-only names', () => {
     expect(validateRequestName('')).toEqual({
       ok: false,
-      error: 'Informe o nome do concurso.',
+      error: 'Informe o nome do hub.',
     })
     expect(validateRequestName('   ')).toEqual({
       ok: false,
-      error: 'Informe o nome do concurso.',
+      error: 'Informe o nome do hub.',
     })
   })
 

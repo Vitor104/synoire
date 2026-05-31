@@ -88,14 +88,14 @@ export function HubsPage() {
       <motion.header variants={item} className="mb-10">
         <motion.div variants={item} className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
           <h1 className="text-3xl font-semibold tracking-tight text-primary">
-            Hubs por concurso
+            Hubs de estudo
           </h1>
           <p className="text-sm text-secondary">
             {isLoading ? 'Carregando…' : `${count} hubs disponíveis`}
           </p>
         </motion.div>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-secondary">
-          Cada hub agrupa salas e metas alinhadas ao edital.
+          Cada hub agrupa salas e metas alinhadas ao seu foco de estudo.
         </p>
         <button
           type="button"
@@ -118,7 +118,7 @@ export function HubsPage() {
         <h2 className="text-sm font-medium text-primary">Seus Ambientes de Foco</h2>
         {joinedHubs.length === 0 ? (
           <p className="mt-3 text-sm text-secondary">
-            Você ainda não selecionou seus concursos de foco.
+            Você ainda não selecionou seus estudos de foco.
           </p>
         ) : (
           <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -165,7 +165,7 @@ export function HubsPage() {
               onClick={() => setRequestOpen(true)}
               className="flex h-full min-h-[8.5rem] w-full items-center justify-center rounded-2xl border border-dashed border-white/10 bg-transparent px-5 py-5 text-sm text-secondary transition hover:border-white/20 hover:text-primary"
             >
-              + Não encontrou seu concurso?
+              + Não encontrou seu hub?
             </button>
           </motion.li>
         </motion.ul>

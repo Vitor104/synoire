@@ -20,10 +20,10 @@ function validateProfileInput(input: UpdateProfileInput): string | null {
 
   const target = input.targetExam.trim()
   if (!target) {
-    return 'Informe o concurso-alvo.'
+    return 'Informe o foco de estudo.'
   }
   if (target.length > 120) {
-    return 'O concurso-alvo deve ter no máximo 120 caracteres.'
+    return 'O foco de estudo deve ter no máximo 120 caracteres.'
   }
 
   const bio = input.bio.trim()

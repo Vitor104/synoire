@@ -27,8 +27,8 @@ export function PrivacyPolicyPage() {
               <h2 className="text-xl font-semibold text-white">1. Introdução</h2>
               <p>
                 O <strong className="font-medium text-white/90">Synoire</strong> é uma plataforma
-                digital de foco e produtividade voltada a concurseiros, oferecendo salas de estudo
-                em tempo real, hubs por concurso, metas, streaks e ferramentas de constância nos
+                digital de foco e produtividade voltada a estudantes, oferecendo salas de estudo
+                em tempo real, hubs de estudo, metas, streaks e ferramentas de constância nos
                 estudos.
               </p>
               <p>

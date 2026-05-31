@@ -19,7 +19,7 @@ import {
 } from '@/lib/hubs'
 
 const HUB_LIMIT_PAYWALL_MESSAGE =
-  'Glow users podem focar em concursos ilimitados.'
+  'Glow users podem focar em hubs ilimitados.'
 
 type JoinedHubsContextValue = {
   joinedHubs: HubView[]

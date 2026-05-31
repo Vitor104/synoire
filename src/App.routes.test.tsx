@@ -136,10 +136,10 @@ describe('rotas (smoke, sem backend)', () => {
   it('renderiza a lista de hubs', async () => {
     renderAt('/hubs')
     expect(
-      screen.getByRole('heading', { name: /hubs por concurso/i }),
+      screen.getByRole('heading', { name: /hubs de estudo/i }),
     ).toBeInTheDocument()
     expect(
-      await screen.findByRole('button', { name: /não encontrou seu concurso/i }),
+      await screen.findByRole('button', { name: /não encontrou seu hub/i }),
     ).toBeInTheDocument()
   })
 

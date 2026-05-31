@@ -11,7 +11,7 @@ test('deve carregar o dashboard e exibir a lista de Hubs', async ({ page }) => {
   await expect(page).toHaveURL(/\/hubs/)
 
   await expect(
-    page.getByRole('heading', { name: /hubs por concurso/i }),
+    page.getByRole('heading', { name: /hubs de estudo/i }),
   ).toBeVisible({ timeout: 15_000 })
 
   const hubCards = page.locator('article').filter({ has: page.locator('h2') })

@@ -224,7 +224,7 @@ export function EditProfileModal({
                 Editar perfil
               </motion.h2>
               <motion.p variants={staggerItem} className="mt-2 text-sm text-secondary">
-                Atualize sua foto, nome, concurso-alvo, bio e meta semanal.
+                Atualize sua foto, nome, foco de estudo, bio e meta semanal.
               </motion.p>
 
               <motion.div variants={staggerItem} className="mt-5 flex items-center gap-4">
@@ -277,7 +277,7 @@ export function EditProfileModal({
               </motion.label>
 
               <motion.label variants={staggerItem} className="mt-4 block text-sm text-secondary">
-                Concurso-alvo
+                Foco de estudo
                 <input
                   type="text"
                   value={targetExam}
@@ -300,7 +300,7 @@ export function EditProfileModal({
                     setBio(e.target.value)
                     setError(null)
                   }}
-                  placeholder="Estudando 4h por dia. Rumo à aprovação!"
+                  placeholder="Estudando 4h por dia. Construindo constância todos os dias!"
                   rows={4}
                   maxLength={MAX_BIO_LENGTH}
                   className={`${inputClass} resize-y`}

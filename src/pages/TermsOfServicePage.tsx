@@ -29,7 +29,7 @@ export function TermsOfServicePage() {
               <p>
                 Estes Termos de Uso regulam o acesso e a utilização do{' '}
                 <strong className="font-medium text-white/90">Synoire</strong>, plataforma de foco e
-                produtividade voltada a concurseiros.
+                produtividade voltada a estudantes.
               </p>
               <p>
                 Ao acessar o site, criar uma conta ou utilizar qualquer funcionalidade, você
@@ -112,7 +112,7 @@ export function TermsOfServicePage() {
               <p>
                 O Synoire é uma ferramenta de apoio à produtividade e constância nos estudos.{' '}
                 <strong className="font-medium text-white/90">
-                  Não garantimos aprovação em concursos
+                  Não garantimos resultados específicos nos seus estudos
                 </strong>{' '}
                 nem resultados específicos de desempenho acadêmico ou profissional.
               </p>

@@ -33,7 +33,7 @@ vi.mock('@/hooks/useUserStats', () => ({
 }))
 
 function HubsStub() {
-  return <h1>Hubs por concurso</h1>
+  return <h1>Hubs de estudo</h1>
 }
 
 function PainelStub() {
@@ -57,7 +57,7 @@ describe('WeeklyGoalGate', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: /hubs por concurso/i, hidden: true }),
+      screen.getByRole('heading', { name: /hubs de estudo/i, hidden: true }),
     ).toBeInTheDocument()
     expect(screen.queryByText(/^painel$/i)).not.toBeInTheDocument()
     expect(screen.getByRole('dialog', { name: /qual é o seu objetivo/i })).toBeInTheDocument()

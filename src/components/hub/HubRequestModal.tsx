@@ -130,12 +130,12 @@ export function HubRequestModal({
                   Sugerir novo Hub
                 </motion.h2>
                 <motion.p variants={staggerItem} className="mt-2 text-sm leading-relaxed text-secondary">
-                  Qual concurso você gostaria de ver aqui? Nossa equipe avaliará a criação
+                  Qual área de estudo você gostaria de ver aqui? Nossa equipe avaliará a criação
                   deste ambiente.
                 </motion.p>
 
                 <motion.label variants={staggerItem} className="mt-6 block text-sm text-secondary">
-                  Nome do concurso
+                  Nome do hub
                   <input
                     type="text"
                     value={name}

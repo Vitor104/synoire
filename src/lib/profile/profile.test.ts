@@ -88,7 +88,7 @@ describe('updateProfileFocus', () => {
 
   it('validates empty target exam', async () => {
     const result = await updateProfileFocus('u1', { targetExam: '  ', bio: '' })
-    expect(result).toEqual({ ok: false, message: 'Informe o concurso-alvo.' })
+    expect(result).toEqual({ ok: false, message: 'Informe o foco de estudo.' })
     expect(updateMock).not.toHaveBeenCalled()
   })
 
