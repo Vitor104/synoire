@@ -90,9 +90,6 @@ export function HubsPage() {
           <h1 className="text-3xl font-semibold tracking-tight text-primary">
             Hubs por concurso
           </h1>
-          <span className="inline-flex items-center rounded-md border border-aqua/35 bg-[#13243a] px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wider text-primary">
-            Beta
-          </span>
           <p className="text-sm text-secondary">
             {isLoading ? 'Carregando…' : `${count} hubs disponíveis`}
           </p>

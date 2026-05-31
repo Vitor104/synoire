@@ -26,7 +26,7 @@ export function LandingHero() {
         animate="visible"
       >
         <motion.div variants={item}>
-          <Eyebrow variant="pill">Plataforma social de estudos · Beta</Eyebrow>
+          <Eyebrow variant="pill">Plataforma social de estudos</Eyebrow>
         </motion.div>
 
         <motion.h1

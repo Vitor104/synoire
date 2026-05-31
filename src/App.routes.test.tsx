@@ -26,9 +26,9 @@ vi.mock('@/hooks/useUserStats', () => ({
 vi.mock('@/hooks/useRoomEntry', () => ({
   useRoomEntry: () => ({
     room: {
-      id: 'demo',
+      id: 'sala-pf',
       hub_slug: 'pf',
-      name: 'Sala demo',
+      name: 'Sala PF',
       focus_cycle: '25/5',
       is_private: false,
       creator_id: 'user-1',
@@ -152,7 +152,7 @@ describe('rotas (smoke, sem backend)', () => {
   })
 
   it('renderiza sala de estudo com onboarding de sessão', () => {
-    renderAt('/salas/demo')
+    renderAt('/salas/sala-pf')
     expect(
       screen.getByRole('main', {
         name: /^sala de estudo:/i,
@@ -168,7 +168,7 @@ describe('rotas (smoke, sem backend)', () => {
   })
 
   it('sala de estudo não usa o shell lateral', () => {
-    renderAt('/salas/demo')
+    renderAt('/salas/sala-pf')
     expect(screen.queryByRole('link', { name: /^hubs$/i })).not.toBeInTheDocument()
   })
 

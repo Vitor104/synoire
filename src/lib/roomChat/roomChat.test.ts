@@ -10,7 +10,7 @@ import type { RoomChatMessage } from './types'
 
 const sampleMsg = (id: string, userId = 'u1'): RoomChatMessage => ({
   id,
-  room_id: 'demo',
+  room_id: 'sala-pf',
   user_id: userId,
   content: 'hello',
   created_at: '2026-05-17T15:34:00.000Z',

@@ -25,7 +25,7 @@ export function buildPrivateHub(
   }
 
   return {
-    id: `demo-private-${slug}`,
+    id: `private-${slug}`,
     slug,
     name: name.trim(),
     shortLabel: 'Privado',

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
   appendMessageIfNew,
-  DEMO_USER_ID,
+  LOCAL_USER_ID,
   getRoomChatAdapter,
   isValidChatContent,
   ROOM_CHAT_FETCH_LIMIT,
@@ -32,7 +32,7 @@ export function useRoomChat({
   const [unreadCount, setUnreadCount] = useState(0)
 
   const currentUserId = useMemo(
-    () => (usesSupabaseChat ? (user?.id ?? '') : DEMO_USER_ID),
+    () => (usesSupabaseChat ? (user?.id ?? '') : LOCAL_USER_ID),
     [user?.id],
   )
 
@@ -89,7 +89,7 @@ export function useRoomChat({
       const content = trimChatContent(raw)
       if (!isValidChatContent(content)) return false
 
-      const userId = usesSupabaseChat ? user?.id : DEMO_USER_ID
+      const userId = usesSupabaseChat ? user?.id : LOCAL_USER_ID
       if (!userId) return false
 
       setSending(true)

@@ -21,5 +21,5 @@ export type RoomChatAdapter = {
 export const ROOM_CHAT_MAX_LENGTH = 500
 export const ROOM_CHAT_FETCH_LIMIT = 50
 
-export const DEMO_USER_ID = 'demo-local-user'
-export const DEMO_PEER_USER_ID = 'demo-peer-user'
+export const LOCAL_USER_ID = 'local-user'
+export const LOCAL_PEER_USER_ID = 'local-peer-user'
